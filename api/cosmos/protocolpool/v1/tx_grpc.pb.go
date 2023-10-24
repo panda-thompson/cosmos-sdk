@@ -21,8 +21,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_FundCommunityPool_FullMethodName  = "/cosmos.protocolpool.v1.Msg/FundCommunityPool"
-	Msg_CommunityPoolSpend_FullMethodName = "/cosmos.protocolpool.v1.Msg/CommunityPoolSpend"
+	Msg_FundCommunityPool_FullMethodName        = "/cosmos.protocolpool.v1.Msg/FundCommunityPool"
+	Msg_CommunityPoolSpend_FullMethodName       = "/cosmos.protocolpool.v1.Msg/CommunityPoolSpend"
+	Msg_FundDispensationProposal_FullMethodName = "/cosmos.protocolpool.v1.Msg/FundDispensationProposal"
 )
 
 // MsgClient is the client API for Msg service.
@@ -41,6 +42,7 @@ type MsgClient interface {
 	//
 	// Since: cosmos-sdk 0.50
 	CommunityPoolSpend(ctx context.Context, in *MsgCommunityPoolSpend, opts ...grpc.CallOption) (*MsgCommunityPoolSpendResponse, error)
+	FundDispensationProposal(ctx context.Context, in *MsgFundDispensationProposal, opts ...grpc.CallOption) (*MsgFundDispensationProposalResponse, error)
 }
 
 type msgClient struct {
@@ -69,6 +71,15 @@ func (c *msgClient) CommunityPoolSpend(ctx context.Context, in *MsgCommunityPool
 	return out, nil
 }
 
+func (c *msgClient) FundDispensationProposal(ctx context.Context, in *MsgFundDispensationProposal, opts ...grpc.CallOption) (*MsgFundDispensationProposalResponse, error) {
+	out := new(MsgFundDispensationProposalResponse)
+	err := c.cc.Invoke(ctx, Msg_FundDispensationProposal_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -85,6 +96,7 @@ type MsgServer interface {
 	//
 	// Since: cosmos-sdk 0.50
 	CommunityPoolSpend(context.Context, *MsgCommunityPoolSpend) (*MsgCommunityPoolSpendResponse, error)
+	FundDispensationProposal(context.Context, *MsgFundDispensationProposal) (*MsgFundDispensationProposalResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -97,6 +109,9 @@ func (UnimplementedMsgServer) FundCommunityPool(context.Context, *MsgFundCommuni
 }
 func (UnimplementedMsgServer) CommunityPoolSpend(context.Context, *MsgCommunityPoolSpend) (*MsgCommunityPoolSpendResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CommunityPoolSpend not implemented")
+}
+func (UnimplementedMsgServer) FundDispensationProposal(context.Context, *MsgFundDispensationProposal) (*MsgFundDispensationProposalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FundDispensationProposal not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -147,6 +162,24 @@ func _Msg_CommunityPoolSpend_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_FundDispensationProposal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgFundDispensationProposal)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).FundDispensationProposal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_FundDispensationProposal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).FundDispensationProposal(ctx, req.(*MsgFundDispensationProposal))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -161,6 +194,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CommunityPoolSpend",
 			Handler:    _Msg_CommunityPoolSpend_Handler,
+		},
+		{
+			MethodName: "FundDispensationProposal",
+			Handler:    _Msg_FundDispensationProposal_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
