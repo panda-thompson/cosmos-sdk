@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"cosmossdk.io/errors"
 	"cosmossdk.io/x/protocolpool/types"
@@ -63,6 +64,80 @@ func (k MsgServer) CommunityPoolSpend(ctx context.Context, msg *types.MsgCommuni
 	logger.Info("transferred from the community pool to recipient", "amount", msg.Amount.String(), "recipient", msg.Recipient)
 
 	return &types.MsgCommunityPoolSpendResponse{}, nil
+}
+
+func (k MsgServer) FundDispensationProposal(ctx context.Context, msg *types.MsgFundDispensationProposal) (*types.MsgFundDispensationProposalResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := k.validateAuthority(msg.GetAuthority()); err != nil {
+		return nil, err
+	}
+
+	recipient, err := k.Keeper.authKeeper.AddressCodec().StringToBytes(msg.RecipientAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the cap is reached
+	reached, err := k.isCapReached(ctx, msg.Cap, recipient)
+	if reached {
+		return nil, fmt.Errorf("cap reached, no more funds can be dispensed")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the expiration is reached
+	if msg.Expiration > 0 && sdkCtx.BlockTime().Unix() > msg.Expiration {
+		return nil, fmt.Errorf("fund dispensation has expired")
+	}
+
+	// // Calculate the amount to dispense based on the percentage
+	// totalCommunityPool, err := k.GetCommunityPool(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// amountToDispense := totalCommunityPool.MulInt(msg.Percentage.Amount.TruncateInt())
+
+	// // Dispense funds to the destination address
+	// err = k.DistributeFromFeePool(ctx, amountToDispense, recipient)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// Calculate the amount to dispense based on the percentage
+	totalTaxFunds, err := k.GetTotalTaxFunds(ctx, recipient)
+	if err != nil {
+		return nil, err
+	}
+
+	amountToDispense := totalTaxFunds.MulInt(msg.Percentage.Amount.RoundInt())
+
+	// Verify that the available funds are sufficient for the requested amount
+	if totalTaxFunds.IsAllLTE(amountToDispense) {
+		return nil, fmt.Errorf("insufficient funds for dispensation")
+	}
+
+	// Reduce the available funds
+	totalTaxFunds = totalTaxFunds.Sub(amountToDispense...)
+	k.UpdateTotalTaxFunds(ctx, totalTaxFunds, recipient)
+
+	// Dispense funds to the destination address"
+	err = k.DistributeFromFeePool(ctx, amountToDispense, recipient)
+	if err != nil {
+		return nil, err
+	}
+
+	// // Emit an event
+	// sdkCtx.EventManager().EmitEvent(
+	// 	sdk.NewEvent(
+	// 		types.EventTypeFundDispensation,
+	// 		sdk.NewAttribute(types.AttributeKeyDestination, msg.RecipientAddress),
+	// 		sdk.NewAttribute(types.AttributeKeyPercentage, msg.Percentage.String()),
+	// 		sdk.NewAttribute(types.AttributeKeyAmountDispensed, amountToDispense.String()),
+	// 	),
+	// )
+
+	return &types.MsgFundDispensationProposalResponse{}, nil
 }
 
 func (k *Keeper) validateAuthority(authority string) error {

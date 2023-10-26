@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
@@ -19,7 +20,13 @@ type Keeper struct {
 	authKeeper   types.AccountKeeper
 	bankKeeper   types.BankKeeper
 
+	cdc codec.BinaryCodec
+
 	authority string
+
+	// State
+	Schema         collections.Schema
+	FundsDispensed collections.Map[sdk.AccAddress, sdk.Coins]
 }
 
 func NewKeeper(cdc codec.BinaryCodec, storeService storetypes.KVStoreService,
@@ -29,12 +36,25 @@ func NewKeeper(cdc codec.BinaryCodec, storeService storetypes.KVStoreService,
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
 		panic(fmt.Sprintf("%s module account has not been set", types.ModuleName))
 	}
-	return Keeper{
-		storeService: storeService,
-		authKeeper:   ak,
-		bankKeeper:   bk,
-		authority:    authority,
+	sb := collections.NewSchemaBuilder(storeService)
+
+	keeper := Keeper{
+		storeService:   storeService,
+		authKeeper:     ak,
+		bankKeeper:     bk,
+		cdc:            cdc,
+		authority:      authority,
+		FundsDispensed: collections.NewMap(sb, types.DispensableFundsKey, "dispensable_funds", sdk.AccAddressKey, codec.CollValue[sdk.Coins](cdc)),
 	}
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	keeper.Schema = schema
+
+	return keeper
 }
 
 // GetAuthority returns the x/protocolpool module's authority.
@@ -66,4 +86,45 @@ func (k Keeper) GetCommunityPool(ctx context.Context) (sdk.Coins, error) {
 		return nil, errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleAccount)
 	}
 	return k.bankKeeper.GetAllBalances(ctx, moduleAccount.GetAddress()), nil
+}
+
+func (k Keeper) GetTotalTaxFunds(ctx context.Context, recipient sdk.AccAddress) (sdk.Coins, error) {
+	return k.FundsDispensed.Get(ctx, recipient)
+	// amount, err := k.FundsDispensed.Get(ctx, recipient)
+	// if err != nil {
+	// 	return sdk.Coin{}, err
+	// }
+}
+
+func (k Keeper) UpdateTotalTaxFunds(ctx context.Context, newFunds sdk.Coins, recipient sdk.AccAddress) error {
+	// Get the current total tax or percentage-based funds
+	currentFunds, err := k.GetTotalTaxFunds(ctx, recipient)
+	if err != nil {
+		return err
+	}
+
+	// Add the newly calculated funds to the current total
+	totalFunds := currentFunds.Add(newFunds)
+
+	// k.FundsDispensed.
+}
+
+func (k Keeper) isCapReached(ctx context.Context, cap sdk.Coins, recipient sdk.AccAddress) (bool, error) {
+	// Get the total amount of funds moved so far (you may need to adjust this based on your implementation)
+	totalMovedFunds, err := k.GetTotalFundsDispensed(ctx, recipient)
+	if err != nil {
+		return false, err
+	}
+
+	// Calculate the total amount that would be moved based on the provided cap
+	proposedTotal := sdk.NewCoins(totalMovedFunds).Add(cap...)
+
+	// Check if the proposed total exceeds the allowed cap
+	cp, err := k.GetCommunityPool(ctx)
+	if err != nil {
+		return false, err
+	}
+	return proposedTotal.IsAnyGT(cp), nil
+
+	// return false, nil
 }
