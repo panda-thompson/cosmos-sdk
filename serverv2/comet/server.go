@@ -6,6 +6,21 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
+/*
+items missing
+
+- abciquery
+	- queryApp
+		- simulate
+		- version
+	- queryStore
+		- key/value/proof (proof is optional)
+	- queryP2P
+		- filter peers
+- store
+- snapshots
+*/
+
 type Service interface {
 	Start() error
 	Stop() error
