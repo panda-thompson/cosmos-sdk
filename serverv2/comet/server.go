@@ -70,6 +70,7 @@ type Proposal interface {
 }
 
 type Mempool[T any] interface {
+	Service
 	Validate(context.Context, T) error
 	ValidateAsync(context.Context, []T) error
 	Select(context.Context, []T, uint32) ([]T, error)
@@ -81,7 +82,7 @@ type Mempool[T any] interface {
 	Remove([]byte) error
 }
 
-func newMockAppManager[T any]() (AppManager, TxCodec[T], TxValidator[T], error) {
+func newAppManager[T any]() (AppManager, TxCodec[T], TxValidator[T], error) {
 	return nil, nil, nil, nil
 }
 
@@ -112,7 +113,7 @@ func NewServer[T any]() (Server[T], error) {
 
 	server := Server[T]{}
 	// start app manager
-	appmanager, txc, txv, err := newMockAppManager[T]()
+	appmanager, txc, txv, err := newAppManager[T]()
 	if err != nil {
 		return Server[T]{}, err
 	}
