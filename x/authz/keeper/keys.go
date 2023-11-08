@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmossdk.io/collections"
 	"time"
 
 	"cosmossdk.io/x/authz"
@@ -17,8 +18,8 @@ import (
 // - 0x01<grant_Bytes>: Grant
 // - 0x02<grant_expiration_Bytes>: GrantQueueItem
 var (
-	GrantKey         = []byte{0x01} // prefix for each key
-	GrantQueuePrefix = []byte{0x02}
+	GrantKey         = collections.NewPrefix(1) // prefix for each key
+	GrantQueuePrefix = collections.NewPrefix(2)
 )
 
 var lenTime = len(sdk.FormatTimeBytes(time.Now()))

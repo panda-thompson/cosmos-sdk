@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"cosmossdk.io/collections"
 	"fmt"
 	"strconv"
 	"time"
@@ -34,16 +35,33 @@ type Keeper struct {
 	cdc          codec.Codec
 	router       baseapp.MessageRouter
 	authKeeper   authz.AccountKeeper
+
+	Schema           collections.Schema
+	GrantKey         collections.KeySet[string]
+	GrantQueuePrefix collections.KeySet[string]
 }
 
 // NewKeeper constructs a message authorization Keeper
 func NewKeeper(storeService corestoretypes.KVStoreService, cdc codec.Codec, router baseapp.MessageRouter, ak authz.AccountKeeper) Keeper {
-	return Keeper{
-		storeService: storeService,
-		cdc:          cdc,
-		router:       router,
-		authKeeper:   ak,
+
+	sb := collections.NewSchemaBuilder(storeService)
+
+	k := Keeper{
+		storeService:     storeService,
+		cdc:              cdc,
+		router:           router,
+		authKeeper:       ak,
+		GrantKey:         collections.NewKeySet(sb, GrantKey, "grant_key", collections.StringKey),
+		GrantQueuePrefix: collections.NewKeySet(sb, GrantQueuePrefix, "grant_queue_key", collections.StringKey),
 	}
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	k.Schema = schema
+
+	return k
 }
 
 // Logger returns a module-specific logger.
