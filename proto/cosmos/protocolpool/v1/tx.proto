@@ -110,9 +110,7 @@ message MsgClaimBudgetResponse {
 
 // MsgCreateContinuousFund defines a message for adding continuous funds.
 message MsgCreateContinuousFund {
-  option (cosmos.msg.v1.signer)      = "authority";
-  option (gogoproto.equal)           = false;
-  option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "authority";
 
   // Title is the title of the funds.
   string title = 1;
