@@ -4244,6 +4244,237 @@ func (x *MsgClaimBudgetResponse) GetAmount() *v1beta1.Coin {
 	return nil
 }
 
+// MsgCreateContinuousFund defines a message for adding continuous funds.
+type MsgCreateContinuousFund struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Title is the title of the funds.
+	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	// Description of the funds.
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// Authority is the address that controls the module (defaults to x/gov unless overwritten).
+	Authority string `protobuf:"bytes,3,opt,name=authority,proto3" json:"authority,omitempty"`
+	// Recipient address of the account receiving funds.
+	Recipient string `protobuf:"bytes,4,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	// Metadata is any arbitrary metadata attached.
+	Metadata string `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// Percentage is the percentage of funds to be allocated from Community pool share on block by block,
+	// till the `cap` is reached or expired.
+	Percentage string `protobuf:"bytes,6,opt,name=percentage,proto3" json:"percentage,omitempty"`
+	// Cap is the capital amount, which when its met funds are no longer distributed.
+	Cap []*v1beta1.Coin `protobuf:"bytes,7,rep,name=cap,proto3" json:"cap,omitempty"`
+	// Optional, if expiry is set, removes the state object when expired.
+	Expiry *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=expiry,proto3" json:"expiry,omitempty"`
+}
+
+func (x *MsgCreateContinuousFund) Reset() {
+	*x = MsgCreateContinuousFund{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_protocolpool_v1_tx_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgCreateContinuousFund) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgCreateContinuousFund) ProtoMessage() {}
+
+// Deprecated: Use MsgCreateContinuousFund.ProtoReflect.Descriptor instead.
+func (*MsgCreateContinuousFund) Descriptor() ([]byte, []int) {
+	return file_cosmos_protocolpool_v1_tx_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *MsgCreateContinuousFund) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *MsgCreateContinuousFund) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *MsgCreateContinuousFund) GetAuthority() string {
+	if x != nil {
+		return x.Authority
+	}
+	return ""
+}
+
+func (x *MsgCreateContinuousFund) GetRecipient() string {
+	if x != nil {
+		return x.Recipient
+	}
+	return ""
+}
+
+func (x *MsgCreateContinuousFund) GetMetadata() string {
+	if x != nil {
+		return x.Metadata
+	}
+	return ""
+}
+
+func (x *MsgCreateContinuousFund) GetPercentage() string {
+	if x != nil {
+		return x.Percentage
+	}
+	return ""
+}
+
+func (x *MsgCreateContinuousFund) GetCap() []*v1beta1.Coin {
+	if x != nil {
+		return x.Cap
+	}
+	return nil
+}
+
+func (x *MsgCreateContinuousFund) GetExpiry() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Expiry
+	}
+	return nil
+}
+
+// MsgCreateContinuousFundResponse defines the response to executing a
+// MsgCreateContinuousFund message.
+type MsgCreateContinuousFundResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *MsgCreateContinuousFundResponse) Reset() {
+	*x = MsgCreateContinuousFundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_protocolpool_v1_tx_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgCreateContinuousFundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgCreateContinuousFundResponse) ProtoMessage() {}
+
+// Deprecated: Use MsgCreateContinuousFundResponse.ProtoReflect.Descriptor instead.
+func (*MsgCreateContinuousFundResponse) Descriptor() ([]byte, []int) {
+	return file_cosmos_protocolpool_v1_tx_proto_rawDescGZIP(), []int{9}
+}
+
+// MsgCancelContinuousFundProposal defines a message to cancel continuous funds for a specific recipient.
+type MsgCancelContinuousFundProposal struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Authority is the account address of authority.
+	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	// RecipientAddress is the account address of recipient whose funds are to be cancelled.
+	RecipientAddress string `protobuf:"bytes,2,opt,name=recipient_address,json=recipientAddress,proto3" json:"recipient_address,omitempty"`
+}
+
+func (x *MsgCancelContinuousFundProposal) Reset() {
+	*x = MsgCancelContinuousFundProposal{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_protocolpool_v1_tx_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgCancelContinuousFundProposal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgCancelContinuousFundProposal) ProtoMessage() {}
+
+// Deprecated: Use MsgCancelContinuousFundProposal.ProtoReflect.Descriptor instead.
+func (*MsgCancelContinuousFundProposal) Descriptor() ([]byte, []int) {
+	return file_cosmos_protocolpool_v1_tx_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *MsgCancelContinuousFundProposal) GetAuthority() string {
+	if x != nil {
+		return x.Authority
+	}
+	return ""
+}
+
+func (x *MsgCancelContinuousFundProposal) GetRecipientAddress() string {
+	if x != nil {
+		return x.RecipientAddress
+	}
+	return ""
+}
+
+// MsgCancelContinuousFundProposalResponse defines the response to executing a
+// MsgCancelContinuousFundProposal message.
+type MsgCancelContinuousFundProposalResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// CanceledTime is the canceled time.
+	CanceledTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=canceled_time,json=canceledTime,proto3" json:"canceled_time,omitempty"`
+	// CanceledHeight defines the canceled block height.
+	CanceledHeight uint64 `protobuf:"varint,2,opt,name=canceled_height,json=canceledHeight,proto3" json:"canceled_height,omitempty"`
+	// RecipientAddress is the account address of recipient whose funds are cancelled.
+	RecipientAddress string `protobuf:"bytes,3,opt,name=recipient_address,json=recipientAddress,proto3" json:"recipient_address,omitempty"`
+}
+
+func (x *MsgCancelContinuousFundProposalResponse) Reset() {
+	*x = MsgCancelContinuousFundProposalResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_protocolpool_v1_tx_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgCancelContinuousFundProposalResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgCancelContinuousFundProposalResponse) ProtoMessage() {}
+
+// Deprecated: Use MsgCancelContinuousFundProposalResponse.ProtoReflect.Descriptor instead.
+func (*MsgCancelContinuousFundProposalResponse) Descriptor() ([]byte, []int) {
+	return file_cosmos_protocolpool_v1_tx_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *MsgCancelContinuousFundProposalResponse) GetCanceledTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CanceledTime
+	}
+	return nil
+}
+
+func (x *MsgCancelContinuousFundProposalResponse) GetCanceledHeight() uint64 {
+	if x != nil {
+		return x.CanceledHeight
+	}
+	return 0
+}
+
+func (x *MsgCancelContinuousFundProposalResponse) GetRecipientAddress() string {
+	if x != nil {
+		return x.RecipientAddress
+	}
+	return ""
+}
+
 var File_cosmos_protocolpool_v1_tx_proto protoreflect.FileDescriptor
 
 var file_cosmos_protocolpool_v1_tx_proto_rawDesc = []byte{

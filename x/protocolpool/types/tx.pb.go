@@ -439,6 +439,220 @@ func (m *MsgClaimBudgetResponse) GetAmount() types.Coin {
 	return types.Coin{}
 }
 
+// MsgCreateContinuousFund defines a message for adding continuous funds.
+type MsgCreateContinuousFund struct {
+	// Title is the title of the funds.
+	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	// Description of the funds.
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// Authority is the address that controls the module (defaults to x/gov unless overwritten).
+	Authority string `protobuf:"bytes,3,opt,name=authority,proto3" json:"authority,omitempty"`
+	// Recipient address of the account receiving funds.
+	Recipient string `protobuf:"bytes,4,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	// Metadata is any arbitrary metadata attached.
+	Metadata string `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// Percentage is the percentage of funds to be allocated from Community pool share on block by block,
+	// till the `cap` is reached or expired.
+	Percentage cosmossdk_io_math.LegacyDec `protobuf:"bytes,6,opt,name=percentage,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"percentage"`
+	// Cap is the capital amount, which when its met funds are no longer distributed.
+	Cap github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,7,rep,name=cap,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"cap"`
+	// Optional, if expiry is set, removes the state object when expired.
+	Expiry *time.Time `protobuf:"bytes,8,opt,name=expiry,proto3,stdtime" json:"expiry,omitempty"`
+}
+
+func (m *MsgCreateContinuousFund) Reset()         { *m = MsgCreateContinuousFund{} }
+func (m *MsgCreateContinuousFund) String() string { return proto.CompactTextString(m) }
+func (*MsgCreateContinuousFund) ProtoMessage()    {}
+func (*MsgCreateContinuousFund) Descriptor() ([]byte, []int) {
+	return fileDescriptor_09efe14517e7f6dc, []int{8}
+}
+func (m *MsgCreateContinuousFund) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgCreateContinuousFund) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgCreateContinuousFund.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgCreateContinuousFund) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCreateContinuousFund.Merge(m, src)
+}
+func (m *MsgCreateContinuousFund) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgCreateContinuousFund) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCreateContinuousFund.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgCreateContinuousFund proto.InternalMessageInfo
+
+// MsgCreateContinuousFundResponse defines the response to executing a
+// MsgCreateContinuousFund message.
+type MsgCreateContinuousFundResponse struct {
+}
+
+func (m *MsgCreateContinuousFundResponse) Reset()         { *m = MsgCreateContinuousFundResponse{} }
+func (m *MsgCreateContinuousFundResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgCreateContinuousFundResponse) ProtoMessage()    {}
+func (*MsgCreateContinuousFundResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_09efe14517e7f6dc, []int{9}
+}
+func (m *MsgCreateContinuousFundResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgCreateContinuousFundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgCreateContinuousFundResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgCreateContinuousFundResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCreateContinuousFundResponse.Merge(m, src)
+}
+func (m *MsgCreateContinuousFundResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgCreateContinuousFundResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCreateContinuousFundResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgCreateContinuousFundResponse proto.InternalMessageInfo
+
+// MsgCancelContinuousFundProposal defines a message to cancel continuous funds for a specific recipient.
+type MsgCancelContinuousFundProposal struct {
+	// Authority is the account address of authority.
+	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	// RecipientAddress is the account address of recipient whose funds are to be cancelled.
+	RecipientAddress string `protobuf:"bytes,2,opt,name=recipient_address,json=recipientAddress,proto3" json:"recipient_address,omitempty"`
+}
+
+func (m *MsgCancelContinuousFundProposal) Reset()         { *m = MsgCancelContinuousFundProposal{} }
+func (m *MsgCancelContinuousFundProposal) String() string { return proto.CompactTextString(m) }
+func (*MsgCancelContinuousFundProposal) ProtoMessage()    {}
+func (*MsgCancelContinuousFundProposal) Descriptor() ([]byte, []int) {
+	return fileDescriptor_09efe14517e7f6dc, []int{10}
+}
+func (m *MsgCancelContinuousFundProposal) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgCancelContinuousFundProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgCancelContinuousFundProposal.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgCancelContinuousFundProposal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCancelContinuousFundProposal.Merge(m, src)
+}
+func (m *MsgCancelContinuousFundProposal) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgCancelContinuousFundProposal) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCancelContinuousFundProposal.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgCancelContinuousFundProposal proto.InternalMessageInfo
+
+func (m *MsgCancelContinuousFundProposal) GetAuthority() string {
+	if m != nil {
+		return m.Authority
+	}
+	return ""
+}
+
+func (m *MsgCancelContinuousFundProposal) GetRecipientAddress() string {
+	if m != nil {
+		return m.RecipientAddress
+	}
+	return ""
+}
+
+// MsgCancelContinuousFundProposalResponse defines the response to executing a
+// MsgCancelContinuousFundProposal message.
+type MsgCancelContinuousFundProposalResponse struct {
+	// CanceledTime is the canceled time.
+	CanceledTime time.Time `protobuf:"bytes,1,opt,name=canceled_time,json=canceledTime,proto3,stdtime" json:"canceled_time"`
+	// CanceledHeight defines the canceled block height.
+	CanceledHeight uint64 `protobuf:"varint,2,opt,name=canceled_height,json=canceledHeight,proto3" json:"canceled_height,omitempty"`
+	// RecipientAddress is the account address of recipient whose funds are cancelled.
+	RecipientAddress string `protobuf:"bytes,3,opt,name=recipient_address,json=recipientAddress,proto3" json:"recipient_address,omitempty"`
+}
+
+func (m *MsgCancelContinuousFundProposalResponse) Reset() {
+	*m = MsgCancelContinuousFundProposalResponse{}
+}
+func (m *MsgCancelContinuousFundProposalResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgCancelContinuousFundProposalResponse) ProtoMessage()    {}
+func (*MsgCancelContinuousFundProposalResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_09efe14517e7f6dc, []int{11}
+}
+func (m *MsgCancelContinuousFundProposalResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgCancelContinuousFundProposalResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgCancelContinuousFundProposalResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgCancelContinuousFundProposalResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCancelContinuousFundProposalResponse.Merge(m, src)
+}
+func (m *MsgCancelContinuousFundProposalResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgCancelContinuousFundProposalResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCancelContinuousFundProposalResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgCancelContinuousFundProposalResponse proto.InternalMessageInfo
+
+func (m *MsgCancelContinuousFundProposalResponse) GetCanceledTime() time.Time {
+	if m != nil {
+		return m.CanceledTime
+	}
+	return time.Time{}
+}
+
+func (m *MsgCancelContinuousFundProposalResponse) GetCanceledHeight() uint64 {
+	if m != nil {
+		return m.CanceledHeight
+	}
+	return 0
+}
+
+func (m *MsgCancelContinuousFundProposalResponse) GetRecipientAddress() string {
+	if m != nil {
+		return m.RecipientAddress
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*MsgFundCommunityPool)(nil), "cosmos.protocolpool.v1.MsgFundCommunityPool")
 	proto.RegisterType((*MsgFundCommunityPoolResponse)(nil), "cosmos.protocolpool.v1.MsgFundCommunityPoolResponse")
