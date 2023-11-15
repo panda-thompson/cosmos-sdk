@@ -113,7 +113,7 @@ func (k MsgServer) CreateContinuousFund(ctx context.Context, msg *types.MsgCreat
 		return nil, err
 	}
 
-	continuousFund, err := k.validateandUpdateContinuousFundProposal(ctx, *msg)
+	continuousFund, err := k.validateandUpdateContinuousFund(ctx, *msg)
 	// Validate the message fields
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (k MsgServer) CreateContinuousFund(ctx context.Context, msg *types.MsgCreat
 	return &types.MsgCreateContinuousFundResponse{}, nil
 }
 
-func (k MsgServer) CancelContinuousFundProposal(ctx context.Context, msg *types.MsgCancelContinuousFundProposal) (*types.MsgCancelContinuousFundProposalResponse, error) {
+func (k MsgServer) CancelContinuousFund(ctx context.Context, msg *types.MsgCancelContinuousFund) (*types.MsgCancelContinuousFundResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if err := k.validateAuthority(msg.Authority); err != nil {
@@ -145,7 +145,7 @@ func (k MsgServer) CancelContinuousFundProposal(ctx context.Context, msg *types.
 		return nil, err
 	}
 
-	return &types.MsgCancelContinuousFundProposalResponse{
+	return &types.MsgCancelContinuousFundResponse{
 		CanceledTime:     canceledTime,
 		CanceledHeight:   uint64(canceledHeight),
 		RecipientAddress: msg.RecipientAddress,

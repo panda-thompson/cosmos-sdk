@@ -228,8 +228,8 @@ func (k Keeper) validateAndUpdateBudgetProposal(ctx context.Context, bp types.Ms
 	return &updatedBudget, nil
 }
 
-// validateandUpdateContinuousFundProposal validates the fields of the CreateContinuousFund message.
-func (k Keeper) validateandUpdateContinuousFundProposal(ctx context.Context, msg types.MsgCreateContinuousFund) (*types.ContinuousFund, error) {
+// validateandUpdateContinuousFund validates the fields of the CreateContinuousFund message.
+func (k Keeper) validateandUpdateContinuousFund(ctx context.Context, msg types.MsgCreateContinuousFund) (*types.ContinuousFund, error) {
 	if msg.Title == "" {
 		return nil, fmt.Errorf("title cannot be empty")
 	}
