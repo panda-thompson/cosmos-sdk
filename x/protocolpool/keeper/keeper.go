@@ -22,6 +22,7 @@ type Keeper struct {
 	storeService storetypes.KVStoreService
 	authKeeper   types.AccountKeeper
 	bankKeeper   types.BankKeeper
+	distrKeeper  types.DistributionKeeper
 
 	cdc codec.BinaryCodec
 
@@ -34,7 +35,7 @@ type Keeper struct {
 }
 
 func NewKeeper(cdc codec.BinaryCodec, storeService storetypes.KVStoreService,
-	ak types.AccountKeeper, bk types.BankKeeper, authority string,
+	ak types.AccountKeeper, bk types.BankKeeper, dk types.DistributionKeeper, authority string,
 ) Keeper {
 	// ensure pool module account is set
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
@@ -46,6 +47,7 @@ func NewKeeper(cdc codec.BinaryCodec, storeService storetypes.KVStoreService,
 		storeService:   storeService,
 		authKeeper:     ak,
 		bankKeeper:     bk,
+		distrKeeper:    dk,
 		cdc:            cdc,
 		authority:      authority,
 		BudgetProposal: collections.NewMap(sb, types.BudgetKey, "budget", sdk.AccAddressKey, codec.CollValue[types.Budget](cdc)),
@@ -244,6 +246,9 @@ func (k Keeper) validateandUpdateContinuousFund(ctx context.Context, msg types.M
 	if msg.Percentage.IsNegative() {
 		return nil, fmt.Errorf("percentage cannot be negative")
 	}
+	if msg.Percentage.GT(math.LegacyOneDec()) {
+		return nil, fmt.Errorf("percentage cannot be greater than one")
+	}
 
 	// Validate cap
 	if err := validateAmount(msg.Cap); err != nil {
@@ -273,5 +278,46 @@ func (k Keeper) validateandUpdateContinuousFund(ctx context.Context, msg types.M
 }
 
 func (k Keeper) ContinuousDistribution(ctx sdk.Context, continuousFund types.ContinuousFund) error {
+	communityTax, err := k.distrKeeper.GetCommunityTax(ctx)
+	if err != nil {
+		return err
+	}
+
+	poolMAcc := k.authKeeper.GetModuleAccount(ctx, types.ModuleName)
+	totalPoolAmount := k.bankKeeper.GetAllBalances(ctx, poolMAcc.GetAddress())
+	poolDecAmount := sdk.NewDecCoinsFromCoins(totalPoolAmount...)
+	totalCommunityTaxAmount := poolDecAmount.MulDecTruncate(communityTax)
+
+	recipient, err := k.authKeeper.AddressCodec().StringToBytes(continuousFund.Recipient)
+	if err != nil {
+		return err
+	}
+
+	// Calculate the funds to be distributed based on the percentage
+	distributionAmount := totalCommunityTaxAmount.MulDec(continuousFund.Percentage)
+
+	// Check for expiration
+	if continuousFund.Expiry != nil && ctx.BlockTime().After(*continuousFund.Expiry) {
+		if err := k.ContinuousFund.Remove(ctx, recipient); err != nil {
+			return fmt.Errorf("continuous funding expired for recipient: %s", continuousFund.Recipient)
+		}
+	}
+
+	for _, amount := range distributionAmount {
+		coins := sdk.NewCoins(sdk.NewCoin(amount.Denom, amount.Amount.TruncateInt()))
+		// Check if the distribution exceeds the cap
+		if coins.IsAllLT(continuousFund.Cap) {
+			// Distribute funds to the recipient
+			err := k.DistributeFromFeePool(ctx, coins, recipient)
+			if err != nil {
+				return err
+			}
+		} else {
+			if err := k.ContinuousFund.Remove(ctx, recipient); err != nil {
+				return fmt.Errorf("capital amount reached for recipient: %s", continuousFund.Recipient)
+			}
+		}
+	}
+
 	return nil
 }
