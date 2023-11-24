@@ -23,6 +23,7 @@ type Config struct {
 	Transport  string
 	Addr       string
 	Standalone bool
+	Trace      bool
 
 	CmtConfig *cmtcfg.Config
 }
@@ -37,12 +38,12 @@ type CometBFTServer struct {
 	cleanupFn func()
 }
 
-func NewCometBFTServer(logger log.Logger, app types.ProtoApp, cfg Config) *CometBFTServer {
+func NewCometBFTServer(logger log.Logger, app types.ProtoApp, cfg Config, proposalHandler types.ProposalHandler, voteExtHandler types.VoteExtensionsHandler) *CometBFTServer {
 	logger = logger.With("module", "cometbft-server")
 
 	return &CometBFTServer{
 		logger: logger,
-		app:    NewCometABCIWrapper(app, logger),
+		app:    NewCometABCIWrapper(app, logger, proposalHandler, voteExtHandler, cfg.Trace),
 		config: cfg,
 	}
 }

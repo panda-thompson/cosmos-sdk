@@ -35,9 +35,14 @@ type ProtoApp interface {
 	GetBlockRetentionHeight(commitHeight int64) int64
 }
 
-type HasProposal interface {
+type ProposalHandler interface {
 	PrepareProposal(context.Context, *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error)
 	ProcessProposal(context.Context, *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error)
+}
+
+type VoteExtensionsHandler interface {
+	ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error)
+	VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error)
 }
 
 type RequestInitChain struct {

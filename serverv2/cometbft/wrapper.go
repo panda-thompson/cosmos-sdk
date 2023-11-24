@@ -12,7 +12,6 @@ import (
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/serverv2/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -26,23 +25,17 @@ var QueryPathBroadcastTx = "/cosmos.tx.v1beta1.Service/BroadcastTx"
 type cometABCIWrapper struct {
 	app    types.ProtoApp
 	logger log.Logger
+	trace  bool
 
-	// indexEvents defines the set of events in the form {eventType}.{attributeKey},
-	// which informs CometBFT what to index. If empty, all events will be indexed.
-	indexEvents map[string]struct{}
+	proposalHandler types.ProposalHandler
+	voteExtHandler  types.VoteExtensionsHandler
 
-	paramStore ParamStore
-
-	defaultProposalHandler *baseapp.DefaultProposalHandler // move this struct to this package
-
-	// TODO: these below here I don't know yet where to put
-	trace bool
-
+	paramStore      ParamStore
 	snapshotManager *snapshots.Manager
 }
 
-func NewCometABCIWrapper(app types.ProtoApp, logger log.Logger) abci.Application {
-	return &cometABCIWrapper{app: app, logger: logger}
+func NewCometABCIWrapper(app types.ProtoApp, logger log.Logger, proposalHandler types.ProposalHandler, voteExtHandler types.VoteExtensionsHandler, debug bool) abci.Application {
+	return &cometABCIWrapper{app: app, logger: logger, trace: debug}
 }
 
 func (w *cometABCIWrapper) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
@@ -80,7 +73,7 @@ func (w *cometABCIWrapper) CheckTx(_ context.Context, req *abci.RequestCheckTx) 
 		GasUsed:   int64(gInfo.GasUsed),
 		Log:       result.Log,
 		Data:      result.Data,
-		Events:    sdk.MarkEventsToIndex(result.Events, w.indexEvents), // TODO: this event handling should be done on cometbft's package
+		Events:    result.Events, // TODO: this event handling should be done on cometbft's package
 	}, nil
 }
 
@@ -121,10 +114,30 @@ func (w *cometABCIWrapper) InitChain(_ context.Context, req *abci.RequestInitCha
 	}, nil
 }
 
-func (w *cometABCIWrapper) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-	if abciapp, ok := w.app.(types.HasProposal); ok {
-		return abciapp.PrepareProposal(ctx, req)
+func (w *cometABCIWrapper) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (resp *abci.ResponsePrepareProposal, err error) {
+	// do basic validation here
+	if req.Height < 1 {
+		return nil, errors.New("PrepareProposal called with invalid height")
 	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			w.logger.Error(
+				"panic recovered in PrepareProposal",
+				"height", req.Height,
+				"time", req.Time,
+				"panic", err,
+			)
+
+			resp = &abci.ResponsePrepareProposal{Txs: req.Txs}
+		}
+	}()
+
+	if w.proposalHandler != nil {
+		return w.proposalHandler.PrepareProposal(ctx, req)
+	}
+
+	// if there's no proposal handler configured, we use the default one (but we still need to use whatever mempool is configured)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return w.defaultProposalHandler.PrepareProposalHandler()(sdkCtx, req)
@@ -141,7 +154,7 @@ func (w *cometABCIWrapper) ProcessProposal(ctx context.Context, req *abci.Reques
 }
 
 func (w *cometABCIWrapper) FinalizeBlock(c context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
-	var events []abci.Event
+	// var events []abci.Event
 
 	if err := w.validateFinalizeBlockHeight(req); err != nil {
 		return nil, err
@@ -169,7 +182,7 @@ func (w *cometABCIWrapper) FinalizeBlock(c context.Context, req *abci.RequestFin
 	// TODO: translate tx results
 
 	return &abci.ResponseFinalizeBlock{
-		Events: events,
+		// Events: events, // TODO: figure out how DeliverBlock will return tx events and other events (from BeginBlock, EndBlock, etc)
 		// TxResults:             txResults,
 		ValidatorUpdates:      w.app.Validators(),
 		ConsensusParamUpdates: cp,
@@ -199,10 +212,8 @@ func (w *cometABCIWrapper) Commit(ctx context.Context, _ *abci.RequestCommit) (*
 		return nil, err
 	}
 
-	// TODO: revise streaming
+	// TODO: revise streaming and snapshotting
 	// abciListeners := w.app.StreamingManager().ABCIListeners
-
-	// The SnapshotIfApplicable method will create the snapshot by starting the goroutine
 	w.snapshotManager.SnapshotIfApplicable(w.app.LastBlockHeight())
 
 	return resp, nil
