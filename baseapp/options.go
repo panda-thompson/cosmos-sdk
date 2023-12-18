@@ -30,6 +30,12 @@ func SetIAVLV2(rootPath string) func(*BaseApp) {
 	return func(bapp *BaseApp) { bapp.cms = rootmulti.NewStoreWithOptions(bapp.db, bapp.logger, opts) }
 }
 
+func SetMemIAVL(rootPath string) func(*BaseApp) {
+	fmt.Println("SetMemIAVL rootPath:", rootPath)
+	opts := rootmulti.StoreOptions{MemiavlPath: rootPath}
+	return func(bapp *BaseApp) { bapp.cms = rootmulti.NewStoreWithOptions(bapp.db, bapp.logger, opts) }
+}
+
 // SetMinGasPrices returns an option that sets the minimum gas prices on the app.
 func SetMinGasPrices(gasPricesStr string) func(*BaseApp) {
 	gasPrices, err := sdk.ParseDecCoins(gasPricesStr)

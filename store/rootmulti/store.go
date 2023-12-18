@@ -11,6 +11,7 @@ import (
 	"time"
 
 	iavl2 "github.com/cosmos/iavl/v2"
+	"github.com/crypto-org-chain/cronos/memiavl"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	iavltree "github.com/cosmos/iavl"
@@ -31,6 +32,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/iavl_v2"
 	"github.com/cosmos/cosmos-sdk/store/listenkv"
 	"github.com/cosmos/cosmos-sdk/store/mem"
+	store_memiavl "github.com/cosmos/cosmos-sdk/store/memiavl"
 	"github.com/cosmos/cosmos-sdk/store/tracekv"
 	"github.com/cosmos/cosmos-sdk/store/transient"
 	"github.com/cosmos/cosmos-sdk/store/types"
@@ -82,10 +84,15 @@ type Store struct {
 	iavlV2Path   string
 	concurrentIO int
 	metadataKv   *iavl2.SqliteKVStore
+
+	// experimental memiavl options
+	memiavlPath string
+	memiavlDB   *memiavl.DB
 }
 
 type StoreOptions struct {
 	IavlV2RootPath string
+	MemiavlPath    string
 }
 
 var (
@@ -125,6 +132,18 @@ func NewStoreWithOptions(db dbm.DB, logger log.Logger, options StoreOptions) *St
 			panic(err)
 		}
 
+	}
+	store.memiavlPath = options.MemiavlPath
+	if store.memiavlPath != "" {
+		store.concurrentIO = 0
+		var err error
+		// use the iavl v2 metadata store so that I don't have to patch memiavl's thing in
+		store.metadataKv, err = iavl2.NewSqliteKVStore(iavl2.SqliteDbOptions{
+			Path: fmt.Sprintf("%s/metadata.sqlite", store.memiavlPath),
+		})
+		if err != nil {
+			panic(err)
+		}
 	}
 	return store
 }
@@ -279,6 +298,17 @@ func (rs *Store) loadVersion(ver int64, upgrades *types.StoreUpgrades) error {
 	loadCh := make(chan struct{}, maxAsync)
 	for i := 0; i < maxAsync; i++ {
 		loadCh <- struct{}{}
+	}
+
+	if rs.memiavlPath != "" {
+		var err error
+		rs.memiavlDB, err = memiavl.Load(rs.memiavlPath, memiavl.Options{
+			SnapshotInterval: 1000,
+			ZeroCopy:         true,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, key := range storesKeys {
@@ -975,16 +1005,18 @@ func (rs *Store) loadCommitStoreFromParams(key types.StoreKey, id types.CommitID
 
 		fmt.Println("load store", key.Name(), "version", id.Version)
 
-		if rs.iavlV2Path == "" {
+		if rs.iavlV2Path != "" {
+			// IAVL V2
+			store, err = iavl_v2.LoadStoreWithInitialVersion(rs.iavlV2Path, key, id, params.initialVersion)
+		} else if rs.memiavlPath != "" {
+			store, err = store_memiavl.LoadStore(key, &rs.memiavlDB.MultiTree)
+		} else {
 			// IAVL v0
 			if params.initialVersion == 0 {
 				store, err = iavl.LoadStore(db, rs.logger, key, id, rs.lazyLoading, rs.iavlCacheSize)
 			} else {
 				store, err = iavl.LoadStoreWithInitialVersion(db, rs.logger, key, id, rs.lazyLoading, params.initialVersion, rs.iavlCacheSize)
 			}
-		} else {
-			// IAVL V2
-			store, err = iavl_v2.LoadStoreWithInitialVersion(rs.iavlV2Path, key, id, params.initialVersion)
 		}
 
 		if err != nil {
@@ -1075,6 +1107,7 @@ func (rs *Store) commitStores(version int64, storeMap map[types.StoreKey]types.C
 	storeInfos := make([]types.StoreInfo, 0, len(storeMap))
 
 	if rs.concurrentIO > 0 {
+		// iavl v2 feature flag
 		var i int
 		for key, store := range storeMap {
 			if store.GetStoreType() == types.StoreTypeIAVL {
@@ -1095,7 +1128,23 @@ func (rs *Store) commitStores(version int64, storeMap map[types.StoreKey]types.C
 		for ; i > 0; i-- {
 			storeInfos = append(storeInfos, *(<-concurrentCommitCh).storeInfo)
 		}
+	} else if rs.memiavlDB != nil {
+		// memiavl
+		_, err := rs.memiavlDB.Commit()
+		if err != nil {
+			panic(err)
+		}
+		ci := rs.memiavlDB.WorkingCommitInfo()
+		for _, si := range ci.StoreInfos {
+			storeInfos = append(storeInfos, types.StoreInfo{
+				Name: si.Name,
+				CommitId: types.CommitID{
+					Version: si.CommitId.Version,
+					Hash:    si.CommitId.Hash,
+				}})
+		}
 	} else {
+		// iavl v0 or v2 without concurrent commit
 		for key, store := range storeMap {
 			si := rs.commitStore(key, store)
 			if si != nil {
