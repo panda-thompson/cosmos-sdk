@@ -678,6 +678,23 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 		return sdk.GasInfo{}, nil, nil, 0, err
 	}
 
+	hasSwap := false
+
+	for _, m := range msgs {
+		msgString := m.String()
+
+		if strings.Contains(msgString, "MsgSwapExactAmountIn") {
+			hasSwap = true
+		}
+	}
+
+	// Replace logger with filter for a specific message type
+	logerCopy := app.logger
+	if hasSwap {
+		app.logger = app.logger.With("sim", "info")
+		app.logger.Info("Swap sim logger is enabled")
+	}
+
 	if app.anteHandler != nil {
 		var (
 			anteCtx sdk.Context
@@ -770,6 +787,11 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 			// append the events in the order of occurrence
 			result.Events = append(anteEvents, result.Events...)
 		}
+	}
+
+	// Revert logger
+	if hasSwap {
+		app.logger = logerCopy
 	}
 
 	return gInfo, result, anteEvents, priority, err
