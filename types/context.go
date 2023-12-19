@@ -105,7 +105,7 @@ func NewContext(ms MultiStore, header tmproto.Header, isCheckTx bool, logger log
 		chainID:              header.ChainID,
 		checkTx:              isCheckTx,
 		logger:               logger,
-		gasMeter:             storetypes.NewInfiniteGasMeter(),
+		gasMeter:             storetypes.NewInfiniteGasMeter(logger),
 		minGasPrice:          DecCoins{},
 		eventManager:         NewEventManager(),
 		kvGasConfig:          storetypes.KVGasConfig(),

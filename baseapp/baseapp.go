@@ -566,10 +566,10 @@ func (app *BaseApp) getState(mode runTxMode) *state {
 
 func (app *BaseApp) getBlockGasMeter(ctx sdk.Context) storetypes.GasMeter {
 	if maxGas := app.GetMaximumBlockGas(ctx); maxGas > 0 {
-		return storetypes.NewGasMeter(maxGas)
+		return storetypes.NewGasMeter(maxGas, ctx.Logger())
 	}
 
-	return storetypes.NewInfiniteGasMeter()
+	return storetypes.NewInfiniteGasMeter(ctx.Logger())
 }
 
 // retrieve the context for the tx w/ txBytes and other memoized values.

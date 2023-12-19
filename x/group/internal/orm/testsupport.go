@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/store/gaskv"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -81,7 +82,7 @@ type GasCountingMockContext struct {
 
 func NewGasCountingMockContext() *GasCountingMockContext {
 	return &GasCountingMockContext{
-		GasMeter: &debuggingGasMeter{sdk.NewInfiniteGasMeter()},
+		GasMeter: &debuggingGasMeter{sdk.NewInfiniteGasMeter(log.NewNopLogger())},
 	}
 }
 
@@ -98,5 +99,5 @@ func (g GasCountingMockContext) GasRemaining() storetypes.Gas {
 }
 
 func (g *GasCountingMockContext) ResetGasMeter() {
-	g.GasMeter = sdk.NewInfiniteGasMeter()
+	g.GasMeter = sdk.NewInfiniteGasMeter(log.NewNopLogger())
 }

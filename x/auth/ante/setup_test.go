@@ -3,6 +3,7 @@ package ante_test
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -37,7 +38,7 @@ func TestSetupDecorator_BlockMaxGas(t *testing.T) {
 
 	suite.ctx = suite.ctx.
 		WithBlockHeight(1).
-		WithGasMeter(storetypes.NewGasMeter(0)).
+		WithGasMeter(storetypes.NewGasMeter(0, log.NewNopLogger())).
 		WithConsensusParams(&tmproto.ConsensusParams{
 			Block: &tmproto.BlockParams{
 				MaxGas: 100,
@@ -71,7 +72,7 @@ func TestSetup(t *testing.T) {
 	antehandler := sdk.ChainAnteDecorators(sud)
 
 	// Set height to non-zero value for GasMeter to be set
-	suite.ctx = suite.ctx.WithBlockHeight(1).WithGasMeter(sdk.NewGasMeter(0))
+	suite.ctx = suite.ctx.WithBlockHeight(1).WithGasMeter(sdk.NewGasMeter(0, log.NewNopLogger()))
 
 	// Context GasMeter Limit not set
 	require.Equal(t, uint64(0), suite.ctx.GasMeter().Limit(), "GasMeter set with limit before setup")

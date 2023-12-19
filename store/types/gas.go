@@ -3,6 +3,8 @@ package types
 import (
 	"fmt"
 	"math"
+
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 // Gas consumption descriptors.
@@ -53,13 +55,15 @@ type GasMeter interface {
 type basicGasMeter struct {
 	limit    Gas
 	consumed Gas
+	logger   log.Logger
 }
 
 // NewGasMeter returns a reference to a new basicGasMeter.
-func NewGasMeter(limit Gas) GasMeter {
+func NewGasMeter(limit Gas, logger log.Logger) GasMeter {
 	return &basicGasMeter{
 		limit:    limit,
 		consumed: 0,
+		logger:   logger,
 	}
 }
 
@@ -105,6 +109,8 @@ func addUint64Overflow(a, b uint64) (uint64, bool) {
 
 // ConsumeGas adds the given amount of gas to the gas consumed and panics if it overflows the limit or out of gas.
 func (g *basicGasMeter) ConsumeGas(amount Gas, descriptor string) {
+	g.logger.Info("BasicGasMeter.ConsumeGas", "amount", amount, "descriptor", descriptor)
+
 	var overflow bool
 	g.consumed, overflow = addUint64Overflow(g.consumed, amount)
 	if overflow {
@@ -148,12 +154,14 @@ func (g *basicGasMeter) String() string {
 
 type infiniteGasMeter struct {
 	consumed Gas
+	logger   log.Logger
 }
 
 // NewInfiniteGasMeter returns a new gas meter without a limit.
-func NewInfiniteGasMeter() GasMeter {
+func NewInfiniteGasMeter(logger log.Logger) GasMeter {
 	return &infiniteGasMeter{
 		consumed: 0,
+		logger:   logger,
 	}
 }
 
@@ -180,6 +188,8 @@ func (g *infiniteGasMeter) Limit() Gas {
 
 // ConsumeGas adds the given amount of gas to the gas consumed and panics if it overflows the limit.
 func (g *infiniteGasMeter) ConsumeGas(amount Gas, descriptor string) {
+	g.logger.Info("InfiniteGasMeter.ConsumeGas", "amount", amount, "descriptor", descriptor)
+
 	var overflow bool
 	// TODO: Should we set the consumed field after overflow checking?
 	g.consumed, overflow = addUint64Overflow(g.consumed, amount)

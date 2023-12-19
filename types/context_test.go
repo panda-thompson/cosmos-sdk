@@ -6,6 +6,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
 	"github.com/golang/mock/gomock"
@@ -90,8 +91,8 @@ func (s *contextTestSuite) TestContextWithCustom() {
 	txbytes := []byte("txbytes")
 	logger := mock.NewMockLogger(ctrl)
 	voteinfos := []abci.VoteInfo{{}}
-	meter := types.NewGasMeter(10000)
-	blockGasMeter := types.NewGasMeter(20000)
+	meter := types.NewGasMeter(10000, log.NewNopLogger())
+	blockGasMeter := types.NewGasMeter(20000, log.NewNopLogger())
 	minGasPrices := types.DecCoins{types.NewInt64DecCoin("feetoken", 1)}
 	headerHash := []byte("headerHash")
 	zeroGasCfg := storetypes.GasConfig{}

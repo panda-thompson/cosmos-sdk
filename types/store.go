@@ -7,6 +7,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/types/kv"
+
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 type (
@@ -156,10 +158,10 @@ type (
 	ErrorGasOverflow = types.ErrorGasOverflow
 )
 
-func NewGasMeter(limit Gas) GasMeter {
-	return types.NewGasMeter(limit)
+func NewGasMeter(limit Gas, logger log.Logger) GasMeter {
+	return types.NewGasMeter(limit, logger)
 }
 
-func NewInfiniteGasMeter() GasMeter {
-	return types.NewInfiniteGasMeter()
+func NewInfiniteGasMeter(log log.Logger) GasMeter {
+	return types.NewInfiniteGasMeter(log)
 }
