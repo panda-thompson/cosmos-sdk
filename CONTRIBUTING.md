@@ -157,7 +157,7 @@ items. In addition, use the following review explanations:
 
 If you open a PR on the Cosmos SDK, it is mandatory to update the relevant documentation in `/docs`.
 
-* If your change relates to the core SDK (baseapp, store, ...), be sure to update the content in `docs/basics/`, `docs/core/` and/or `docs/building-modules/` folders.
+* If your change relates to the core SDK (baseapp, store, ...), be sure to update the content in `docs/learn/`, `docs/core/` and/or `docs/building-modules/` folders.
 * If your changes relate to the core of the CLI (not specifically to module's CLI/Rest), then modify the content in the `docs/run-node/` folder.
 * If your changes relate to a module, then be sure to update the module's spec in `x/{moduleName}/README.md`.
 

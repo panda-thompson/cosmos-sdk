@@ -10,7 +10,7 @@ While encoding in the Cosmos SDK used to be mainly handled by `go-amino` codec, 
 
 :::note Pre-requisite Readings
 
-* [Anatomy of a Cosmos SDK application](../basics/00-app-anatomy.md)
+* [Anatomy of a Cosmos SDK application](../learn/00-app-anatomy.md)
 
 :::
 
@@ -141,7 +141,7 @@ See [ADR-020](../architecture/adr-020-protobuf-transaction-encoding.md) for deta
 
 ### Interface Encoding and Usage of `Any`
 
-The Protobuf DSL is strongly typed, which can make inserting variable-typed fields difficult. Imagine we want to create a `Profile` protobuf message that serves as a wrapper over [an account](../basics/03-accounts.md):
+The Protobuf DSL is strongly typed, which can make inserting variable-typed fields difficult. Imagine we want to create a `Profile` protobuf message that serves as a wrapper over [an account](../learn/03-accounts.md):
 
 ```protobuf
 message Profile {

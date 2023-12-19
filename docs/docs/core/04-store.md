@@ -10,7 +10,7 @@ A store is a data structure that holds the state of the application.
 
 :::note Pre-requisite Readings
 
-* [Anatomy of a Cosmos SDK application](../basics/00-app-anatomy.md)
+* [Anatomy of a Cosmos SDK application](../learn/00-app-anatomy.md)
 
 :::
 
@@ -138,7 +138,7 @@ A `KVStore` is a simple key-value store used to store and retrieve data. A `Comm
 
 Individual `KVStore`s are used by modules to manage a subset of the global state. `KVStores` can be accessed by objects that hold a specific key. This `key` should only be exposed to the [`keeper`](../building-modules/06-keeper.md) of the module that defines the store.
 
-`CommitKVStore`s are declared by proxy of their respective `key` and mounted on the application's [multistore](#multistore) in the [main application file](../basics/00-app-anatomy.md#core-application-file). In the same file, the `key` is also passed to the module's `keeper` that is responsible for managing the store.
+`CommitKVStore`s are declared by proxy of their respective `key` and mounted on the application's [multistore](#multistore) in the [main application file](../learn/00-app-anatomy.md#core-application-file). In the same file, the `key` is also passed to the module's `keeper` that is responsible for managing the store.
 
 ```go reference
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/store/types/store.go#L206-L239
@@ -224,7 +224,7 @@ This is the type used whenever an IAVL Store needs to be branched to create an i
 
 ### `GasKv` Store
 
-Cosmos SDK applications use [`gas`](../basics/04-gas-fees.md) to track resources usage and prevent spam. [`GasKv.Store`](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/store/gaskv/store.go) is a `KVStore` wrapper that enables automatic gas consumption each time a read or write to the store is made. It is the solution of choice to track storage usage in Cosmos SDK applications.
+Cosmos SDK applications use [`gas`](../learn/04-gas-fees.md) to track resources usage and prevent spam. [`GasKv.Store`](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/store/gaskv/store.go) is a `KVStore` wrapper that enables automatic gas consumption each time a read or write to the store is made. It is the solution of choice to track storage usage in Cosmos SDK applications.
 
 ```go reference
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/store/gaskv/store.go#L11-L17

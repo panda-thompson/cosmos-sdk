@@ -9,7 +9,7 @@ sidebar_position: 1
 
 :::note Pre-requisite Readings
 
-* [Anatomy of a Cosmos SDK application](../basics/00-app-anatomy.md)
+* [Anatomy of a Cosmos SDK application](../learn/00-app-anatomy.md)
 * [CometBFT Documentation on Events](https://docs.cometbft.com/v0.37/spec/abci/abci++_basic_concepts#events)
 
 :::
@@ -147,7 +147,7 @@ Subscribing to this Event would be done like so:
 }
 ```
 
-where `ownerAddress` is an address following the [`AccAddress`](../basics/03-accounts.md#addresses) format.
+where `ownerAddress` is an address following the [`AccAddress`](../learn/03-accounts.md#addresses) format.
 
 The same way can be used to subscribe to [legacy events](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/x/bank/types/events.go).
 

@@ -10,7 +10,7 @@ The main endpoint of a Cosmos SDK application is the daemon client, otherwise kn
 
 :::note Pre-requisite Readings
 
-* [Anatomy of an SDK application](../basics/00-app-anatomy.md)
+* [Anatomy of an SDK application](../learn/00-app-anatomy.md)
 
 :::
 
@@ -21,7 +21,7 @@ The full-node client of any Cosmos SDK application is built by running a `main` 
 In general, developers will implement the `main.go` function with the following structure:
 
 * First, an [`encodingCodec`](./05-encoding.md) is instantiated for the application.
-* Then, the `config` is retrieved and config parameters are set. This mainly involves setting the Bech32 prefixes for [addresses](../basics/03-accounts.md#addresses).
+* Then, the `config` is retrieved and config parameters are set. This mainly involves setting the Bech32 prefixes for [addresses](../learn/03-accounts.md#addresses).
 
 ```go reference
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/types/config.go#L14-L29
@@ -69,7 +69,7 @@ Note that an `appCreator` is a function that fulfills the `AppCreator` signature
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/server/types/app.go#L64-L66
 ```
 
-In practice, the [constructor of the application](../basics/00-app-anatomy.md#constructor-function) is passed as the `appCreator`.
+In practice, the [constructor of the application](../learn/00-app-anatomy.md#constructor-function) is passed as the `appCreator`.
 
 ```go reference
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/simapp/simd/cmd/root.go#L254-L268

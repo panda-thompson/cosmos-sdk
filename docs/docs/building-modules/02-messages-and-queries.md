@@ -18,7 +18,7 @@ sidebar_position: 1
 
 `Msg`s are objects whose end-goal is to trigger state-transitions. They are wrapped in [transactions](../core/01-transactions.md), which may contain one or more of them.
 
-When a transaction is relayed from the underlying consensus engine to the Cosmos SDK application, it is first decoded by [`BaseApp`](../core/00-baseapp.md). Then, each message contained in the transaction is extracted and routed to the appropriate module via `BaseApp`'s `MsgServiceRouter` so that it can be processed by the module's [`Msg` service](./03-msg-services.md). For a more detailed explanation of the lifecycle of a transaction, click [here](../basics/01-tx-lifecycle.md).
+When a transaction is relayed from the underlying consensus engine to the Cosmos SDK application, it is first decoded by [`BaseApp`](../core/00-baseapp.md). Then, each message contained in the transaction is extracted and routed to the appropriate module via `BaseApp`'s `MsgServiceRouter` so that it can be processed by the module's [`Msg` service](./03-msg-services.md). For a more detailed explanation of the lifecycle of a transaction, click [here](../learn/01-tx-lifecycle.md).
 
 ### `Msg` Services
 
@@ -79,7 +79,7 @@ https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/x/gov/types/v1/msgs.go#L12
 
 ## Queries
 
-A `query` is a request for information made by end-users of applications through an interface and processed by a full-node. A `query` is received by a full-node through its consensus engine and relayed to the application via the ABCI. It is then routed to the appropriate module via `BaseApp`'s `QueryRouter` so that it can be processed by the module's query service (./04-query-services.md). For a deeper look at the lifecycle of a `query`, click [here](../basics/02-query-lifecycle.md).
+A `query` is a request for information made by end-users of applications through an interface and processed by a full-node. A `query` is received by a full-node through its consensus engine and relayed to the application via the ABCI. It is then routed to the appropriate module via `BaseApp`'s `QueryRouter` so that it can be processed by the module's query service (./04-query-services.md). For a deeper look at the lifecycle of a `query`, click [here](../learn/02-query-lifecycle.md).
 
 ### gRPC Queries
 

@@ -10,7 +10,7 @@ Now that the application is ready and the keyring populated, it's time to see ho
 
 :::note Pre-requisite Readings
 
-* [Anatomy of a Cosmos SDK Application](../basics/00-app-anatomy.md)
+* [Anatomy of a Cosmos SDK Application](../learn/00-app-anatomy.md)
 * [Setting up the keyring](./00-keyring.md)
 
 :::

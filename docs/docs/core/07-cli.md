@@ -5,7 +5,7 @@ sidebar_position: 1
 # Command-Line Interface
 
 :::note Synopsis
-This document describes how command-line interface (CLI) works on a high-level, for an [**application**](../basics/00-app-anatomy.md). A separate document for implementing a CLI for a Cosmos SDK [**module**](../building-modules/01-intro.md) can be found [here](../building-modules/09-module-interfaces.md#cli).
+This document describes how command-line interface (CLI) works on a high-level, for an [**application**](../learn/00-app-anatomy.md). A separate document for implementing a CLI for a Cosmos SDK [**module**](../building-modules/01-intro.md) can be found [here](../building-modules/09-module-interfaces.md#cli).
 :::
 
 ## Command-Line Interface

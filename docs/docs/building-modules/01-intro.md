@@ -10,8 +10,8 @@ Modules define most of the logic of Cosmos SDK applications. Developers compose 
 
 :::note Pre-requisite Readings
 
-* [Anatomy of a Cosmos SDK application](../basics/00-app-anatomy.md)
-* [Lifecycle of a Cosmos SDK transaction](../basics/01-tx-lifecycle.md)
+* [Anatomy of a Cosmos SDK application](../learn/00-app-anatomy.md)
+* [Lifecycle of a Cosmos SDK transaction](../learn/01-tx-lifecycle.md)
 
 :::
 
