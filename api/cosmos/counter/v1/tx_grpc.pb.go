@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Msg_IncreaseCount_FullMethodName = "/cosmos.counter.v1.Msg/IncreaseCount"
+	Msg_Echo_FullMethodName          = "/cosmos.counter.v1.Msg/Echo"
 )
 
 // MsgClient is the client API for Msg service.
@@ -28,6 +29,8 @@ const (
 type MsgClient interface {
 	// IncreaseCount increments the counter by the specified amount.
 	IncreaseCount(ctx context.Context, in *MsgIncreaseCounter, opts ...grpc.CallOption) (*MsgIncreaseCountResponse, error)
+	// Echo is used for stateless execution.
+	Echo(ctx context.Context, in *MsgEcho, opts ...grpc.CallOption) (*MsgEchoResponse, error)
 }
 
 type msgClient struct {
@@ -47,12 +50,23 @@ func (c *msgClient) IncreaseCount(ctx context.Context, in *MsgIncreaseCounter, o
 	return out, nil
 }
 
+func (c *msgClient) Echo(ctx context.Context, in *MsgEcho, opts ...grpc.CallOption) (*MsgEchoResponse, error) {
+	out := new(MsgEchoResponse)
+	err := c.cc.Invoke(ctx, Msg_Echo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
 	// IncreaseCount increments the counter by the specified amount.
 	IncreaseCount(context.Context, *MsgIncreaseCounter) (*MsgIncreaseCountResponse, error)
+	// Echo is used for stateless execution.
+	Echo(context.Context, *MsgEcho) (*MsgEchoResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -62,6 +76,9 @@ type UnimplementedMsgServer struct {
 
 func (UnimplementedMsgServer) IncreaseCount(context.Context, *MsgIncreaseCounter) (*MsgIncreaseCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IncreaseCount not implemented")
+}
+func (UnimplementedMsgServer) Echo(context.Context, *MsgEcho) (*MsgEchoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Echo not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -94,6 +111,24 @@ func _Msg_IncreaseCount_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_Echo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgEcho)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).Echo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_Echo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).Echo(ctx, req.(*MsgEcho))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -104,6 +139,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IncreaseCount",
 			Handler:    _Msg_IncreaseCount_Handler,
+		},
+		{
+			MethodName: "Echo",
+			Handler:    _Msg_Echo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

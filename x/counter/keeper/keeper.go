@@ -23,6 +23,14 @@ type Keeper struct {
 	CountStore collections.Item[int64]
 }
 
+func (k Keeper) Echo(ctx context.Context, echo *types.MsgEcho) (*types.MsgEchoResponse, error) {
+	return &types.MsgEchoResponse{Echo: echo.Echo}, nil
+}
+
+func (k Keeper) QueryEcho(_ context.Context, request *types.QueryEchoRequest) (*types.QueryEchoResponse, error) {
+	return &types.QueryEchoResponse{Echo: request.Echo}, nil
+}
+
 func NewKeeper(storeService storetypes.KVStoreService, em event.Service) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 	return Keeper{

@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetCount_FullMethodName = "/cosmos.counter.v1.Query/GetCount"
+	Query_GetCount_FullMethodName  = "/cosmos.counter.v1.Query/GetCount"
+	Query_QueryEcho_FullMethodName = "/cosmos.counter.v1.Query/QueryEcho"
 )
 
 // QueryClient is the client API for Query service.
@@ -28,6 +29,8 @@ const (
 type QueryClient interface {
 	// GetCount queries the parameters of x/Counter module.
 	GetCount(ctx context.Context, in *QueryGetCountRequest, opts ...grpc.CallOption) (*QueryGetCountResponse, error)
+	// QueryEcho returns the provided message. It's used for stateless execution.
+	QueryEcho(ctx context.Context, in *QueryEchoRequest, opts ...grpc.CallOption) (*QueryEchoResponse, error)
 }
 
 type queryClient struct {
@@ -47,12 +50,23 @@ func (c *queryClient) GetCount(ctx context.Context, in *QueryGetCountRequest, op
 	return out, nil
 }
 
+func (c *queryClient) QueryEcho(ctx context.Context, in *QueryEchoRequest, opts ...grpc.CallOption) (*QueryEchoResponse, error) {
+	out := new(QueryEchoResponse)
+	err := c.cc.Invoke(ctx, Query_QueryEcho_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
 	// GetCount queries the parameters of x/Counter module.
 	GetCount(context.Context, *QueryGetCountRequest) (*QueryGetCountResponse, error)
+	// QueryEcho returns the provided message. It's used for stateless execution.
+	QueryEcho(context.Context, *QueryEchoRequest) (*QueryEchoResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -62,6 +76,9 @@ type UnimplementedQueryServer struct {
 
 func (UnimplementedQueryServer) GetCount(context.Context, *QueryGetCountRequest) (*QueryGetCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCount not implemented")
+}
+func (UnimplementedQueryServer) QueryEcho(context.Context, *QueryEchoRequest) (*QueryEchoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryEcho not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -94,6 +111,24 @@ func _Query_GetCount_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_QueryEcho_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryEchoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryEcho(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_QueryEcho_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryEcho(ctx, req.(*QueryEchoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -104,6 +139,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCount",
 			Handler:    _Query_GetCount_Handler,
+		},
+		{
+			MethodName: "QueryEcho",
+			Handler:    _Query_QueryEcho_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

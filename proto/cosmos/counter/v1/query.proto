@@ -7,6 +7,8 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/counter/types";
 service Query {
   // GetCount queries the parameters of x/Counter module.
   rpc GetCount(QueryGetCountRequest) returns (QueryGetCountResponse);
+  // QueryEcho returns the provided message. It's used for stateless execution.
+  rpc QueryEcho(QueryEchoRequest) returns (QueryEchoResponse);
 }
 
 // QueryGetCountRequest defines the request type for querying x/mock count.
@@ -15,4 +17,14 @@ message QueryGetCountRequest {}
 // QueryGetCountResponse defines the response type for querying x/mock count.
 message QueryGetCountResponse {
   int64 total_count = 1;
+}
+
+// QueryEchoRequest is the request for QueryEcho RPC.
+message QueryEchoRequest {
+  string echo = 1;
+}
+
+// QueryEchoResponse is the response for QueryEcho RPC.
+message QueryEchoResponse {
+  string echo = 1;
 }

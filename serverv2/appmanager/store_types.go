@@ -1,5 +1,7 @@
 package appmanager
 
+import "cosmossdk.io/core/store"
+
 type Store interface {
 	NewBlockWithVersion(version uint64) (ReadonlyStore, error)
 	ReadonlyWithVersion(version uint64) (ReadonlyStore, error)
@@ -13,8 +15,7 @@ type ChangeSet struct {
 
 type BranchStore interface {
 	ReadonlyStore
-	Set(key, value []byte) error
-	Delete(key []byte) error
+	store.KVStore
 	ApplyChangeSets(changes []ChangeSet) error
 	ChangeSets() ([]ChangeSet, error)
 }

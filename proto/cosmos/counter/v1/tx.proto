@@ -14,6 +14,9 @@ service Msg {
 
   // IncreaseCount increments the counter by the specified amount.
   rpc IncreaseCount(MsgIncreaseCounter) returns (MsgIncreaseCountResponse);
+
+  // Echo is used for stateless execution.
+  rpc Echo(MsgEcho) returns (MsgEchoResponse);
 }
 
 // MsgIncreaseCounter defines a count Msg service counter.
@@ -32,4 +35,14 @@ message MsgIncreaseCounter {
 message MsgIncreaseCountResponse {
   // new_count is the number of times the counter was incremented.
   int64 new_count = 1;
+}
+
+// MsgEcho is the message used for echos.
+message MsgEcho {
+  string echo = 1;
+}
+
+// MsgEchoResponse is the response type when sending a MsgEcho.
+message MsgEchoResponse {
+  string echo = 1;
 }

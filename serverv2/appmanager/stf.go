@@ -57,7 +57,7 @@ func (s STFAppManager[T]) DeliverBlock(ctx context.Context, block appmanager.Blo
 }
 
 func (s STFAppManager[T]) beginBlock(ctx context.Context, state BranchStore) (beginBlockEvents []event.Event, err error) {
-	execCtx := s.makeContext(ctx, runtimeIdentity, state, 0) // TODO: gas limit
+	execCtx := s.MakeContext(ctx, runtimeIdentity, state, 0) // TODO: gas limit
 	err = s.doBeginBlock(execCtx)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (s STFAppManager[T]) deliverTx(ctx context.Context, state BranchStore, txBy
 // validateTx validates a transaction given the provided BranchStore and gas limit.
 // If the validation is successful, state is committed
 func (s STFAppManager[T]) validateTx(ctx context.Context, store BranchStore, gasLimit uint64, tx T) (gasUsed uint64, events []event.Event, err error) {
-	validateCtx := s.makeContext(ctx, tx.GetSender(), store, gasLimit)
+	validateCtx := s.MakeContext(ctx, tx.GetSender(), store, gasLimit)
 	err = s.doTxValidation(ctx, tx)
 	if err != nil {
 		return 0, nil, nil
@@ -123,7 +123,7 @@ func (s STFAppManager[T]) validateTx(ctx context.Context, store BranchStore, gas
 }
 
 func (s STFAppManager[T]) execTx(ctx context.Context, store BranchStore, gasLimit uint64, tx T) (msgResp Type, gasUsed uint64, execEvents []event.Event, err error) {
-	execCtx := s.makeContext(ctx, tx.GetSender(), store, gasLimit)
+	execCtx := s.MakeContext(ctx, tx.GetSender(), store, gasLimit)
 	// atomic execution of the all messages in a transaction, TODO: we should allow messages to fail in a specific mode
 	for _, msg := range tx.GetMessages() {
 		msgResp, err = s.handleMsg(ctx, msg)
@@ -145,7 +145,7 @@ func (s STFAppManager[T]) execTx(ctx context.Context, store BranchStore, gasLimi
 }
 
 func (s STFAppManager[T]) endBlock(ctx context.Context, store BranchStore, block appmanager.BlockRequest) (endBlockEvents []event.Event, err error) {
-	execCtx := s.makeContext(ctx, runtimeIdentity, store, 0) // TODO: gas limit
+	execCtx := s.MakeContext(ctx, runtimeIdentity, store, 0) // TODO: gas limit
 	err = s.doBeginBlock(execCtx)
 	if err != nil {
 		return nil, err
@@ -158,6 +158,10 @@ func (s STFAppManager[T]) endBlock(ctx context.Context, store BranchStore, block
 	return execCtx.events, store.ApplyChangeSets(changes)
 }
 
+func (s STFAppManager[T]) Handle(ctx context.Context, sender Identity, msg Type) (msgResp Type, err error) {
+	return s.handleMsg(ctx, msg)
+}
+
 type executionContext struct {
 	context.Context
 	store    BranchStore
@@ -167,7 +171,7 @@ type executionContext struct {
 	sender   Identity
 }
 
-func (s STFAppManager[T]) makeContext(
+func (s STFAppManager[T]) MakeContext(
 	ctx context.Context,
 	sender Identity,
 	store BranchStore,

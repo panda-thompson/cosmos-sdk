@@ -164,7 +164,8 @@ func (r *_moduleMsgRouter) RegisterPostHandler(msg appmanager.Type, postHandler 
 }
 
 func (r *_moduleMsgRouter) RegisterHandler(msg appmanager.Type, handlerFunc func(ctx context.Context, msg appmanager.Type) (resp appmanager.Type, err error)) {
-	err := r.msgRouterBuilder.RegisterHandler(TypeName(msg), handlerFunc)
+	typeName := TypeName(msg)
+	err := r.msgRouterBuilder.RegisterHandler(typeName, handlerFunc)
 	if err != nil {
 		r.err = errors.Join(r.err, fmt.Errorf("%w: %s", err, r.moduleName))
 	}
