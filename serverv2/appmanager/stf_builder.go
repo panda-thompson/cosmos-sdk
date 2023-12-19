@@ -75,6 +75,12 @@ func (s *STFBuilder[T]) Build(opts *STFBuilderOptions) (*STFAppManager[T], error
 	}, nil
 }
 
+func (s *STFBuilder[T]) AddModules(modules ...appmanager.STFModule[T]) {
+	for _, mod := range modules {
+		s.AddModule(mod)
+	}
+}
+
 func (s *STFBuilder[T]) AddModule(m appmanager.Module[T]) {
 	// TODO: the best is add modules but not build them here but build them later when we call STFBuilder.Build.
 	// build msg handler

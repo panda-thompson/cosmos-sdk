@@ -17,9 +17,9 @@ type SimApp struct {
 
 func NewSTF() (*appmanager.STFAppManager[Tx], error) {
 	builder := appmanager.NewSTFBuilder[Tx]()
-	for _, module := range STFModules() {
-		builder.AddModule(module)
-	}
+
+	builder.AddModules(STFModules()...)
+
 	return builder.Build(&appmanager.STFBuilderOptions{
 		OrderEndBlockers:   nil,
 		OrderBeginBlockers: nil,
