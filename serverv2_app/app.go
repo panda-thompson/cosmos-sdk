@@ -25,7 +25,6 @@ func NewSTF() (*appmanager.STFAppManager[Tx], error) {
 		OrderBeginBlockers: nil,
 		OrderTxValidators:  nil,
 	})
-
 }
 
 func STFModules() []appmanager_core.STFModule[Tx] {

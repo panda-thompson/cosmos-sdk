@@ -46,22 +46,27 @@ func (s *STFBuilder[T]) Build(opts *STFBuilderOptions) (*STFAppManager[T], error
 	if err != nil {
 		return nil, fmt.Errorf("unable to build msg handler: %w", err)
 	}
+
 	queryHandler, err := s.queryRouterBuilder.Build()
 	if err != nil {
 		return nil, fmt.Errorf("unable to build query handler: %w", err)
 	}
+
 	beginBlocker, err := s.makeBeginBlocker(opts.OrderBeginBlockers)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build begin blocker: %w", err)
 	}
+
 	endBlocker, err := s.makeEndBlocker(opts.OrderEndBlockers)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build end blocker: %w", err)
 	}
+
 	txValidator, err := s.makeTxValidator(opts.OrderTxValidators)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build tx validator: %w", err)
 	}
+
 	return &STFAppManager[T]{
 		handleMsg:      msgHandler,
 		handleQuery:    queryHandler,
