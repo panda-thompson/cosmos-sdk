@@ -7,7 +7,3 @@ type (
 	Identity = []byte
 	Hash     = []byte
 )
-
-func TypeName(msg Type) string {
-	return string(proto.MessageName(msg))
-}

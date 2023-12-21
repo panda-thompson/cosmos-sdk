@@ -38,7 +38,7 @@ type BlockRequest struct {
 	Time              time.Time
 	Hash              []byte
 	Txs               [][]byte
-	ConsensusMessages []Type //
+	ConsensusMessages []Type
 }
 
 type BlockResponse struct {

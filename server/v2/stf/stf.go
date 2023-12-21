@@ -16,7 +16,7 @@ type (
 	Identity = []byte
 )
 
-var runtimeIdentity Identity = []byte("runtime") // TODO: most likely should be moved to core somewhere.
+var runtimeIdentity = []byte("runtime") // TODO: most likely should be moved to core somewhere.
 
 // STF is a struct that manages the state transition component of the app.
 type STF[T transaction.Tx] struct {
@@ -29,8 +29,9 @@ type STF[T transaction.Tx] struct {
 	doTxValidation func(ctx context.Context, tx T) error
 
 	decodeTx func(txBytes []byte) (T, error)
-
-	branch func(store store.ReadonlyState) store.WritableState // branch is a function that given a readonly store it returns a writable version of it.
+	// branch is a function that given a readonly store returns state that can be
+	// written to.
+	branch func(state store.ReadonlyState) store.WritableState
 }
 
 // DeliverBlock is our state transition function.
@@ -63,7 +64,7 @@ func (s STF[T]) DeliverBlock(ctx context.Context, block appmanager.BlockRequest,
 	}, newState, nil
 }
 
-// DeliverTx executes a TX and returns the result.
+// deliverTx executes a TX and returns the result.
 func (s STF[T]) deliverTx(ctx context.Context, state store.WritableState, txBytes []byte) appmanager.TxResult {
 	tx, err := s.decodeTx(txBytes)
 	if err != nil {
