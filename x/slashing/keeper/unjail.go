@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/errors"
 	"cosmossdk.io/x/slashing/types"
 
@@ -63,7 +64,7 @@ func (k Keeper) Unjail(ctx context.Context, validatorAddr sdk.ValAddress) error 
 		}
 
 		// cannot be unjailed until out of jail
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		sdkCtx := appmodule.UnwrapSDKContext(ctx)
 		if sdkCtx.HeaderInfo().Time.Before(info.JailedUntil) {
 			return types.ErrValidatorJailed
 		}

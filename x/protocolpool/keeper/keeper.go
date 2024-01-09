@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	storetypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
@@ -66,7 +67,7 @@ func (k Keeper) GetAuthority() string {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With(log.ModuleKey, "x/"+types.ModuleName)
 }
 
@@ -107,7 +108,7 @@ func (k Keeper) claimFunds(ctx context.Context, recipient sdk.AccAddress) (amoun
 }
 
 func (k Keeper) getClaimableFunds(ctx context.Context, recipient sdk.AccAddress) (amount sdk.Coin, err error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 
 	budget, err := k.BudgetProposal.Get(ctx, recipient)
 	if err != nil {
@@ -197,7 +198,7 @@ func (k Keeper) validateAndUpdateBudgetProposal(ctx context.Context, bp types.Ms
 		return nil, fmt.Errorf("invalid budget proposal: %w", err)
 	}
 
-	currentTime := sdk.UnwrapSDKContext(ctx).BlockTime()
+	currentTime := appmodule.UnwrapSDKContext(ctx).BlockTime()
 	if bp.StartTime.IsZero() || bp.StartTime == nil {
 		bp.StartTime = &currentTime
 	}

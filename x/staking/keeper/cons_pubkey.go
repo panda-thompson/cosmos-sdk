@@ -8,6 +8,7 @@ import (
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
+	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/x/staking/types"
 
@@ -25,7 +26,7 @@ func (k Keeper) setConsPubKeyRotationHistory(
 	ctx context.Context, valAddr sdk.ValAddress,
 	oldPubKey, newPubKey *codectypes.Any, fee sdk.Coin,
 ) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	height := uint64(sdkCtx.BlockHeight())
 	history := types.ConsPubKeyRotationHistory{
 		OperatorAddress: valAddr.Bytes(),
@@ -226,7 +227,7 @@ func (k Keeper) getAndRemoveAllMaturedRotatedKeys(ctx sdk.Context, matureTime ti
 
 // GetBlockConsPubKeyRotationHistory returns the rotation history for the current height.
 func (k Keeper) GetBlockConsPubKeyRotationHistory(ctx context.Context) ([]types.ConsPubKeyRotationHistory, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 
 	iterator, err := k.RotationHistory.Indexes.Block.MatchExact(ctx, uint64(sdkCtx.BlockHeight()))
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 
 	"github.com/hashicorp/go-metrics"
 
+	"cosmossdk.io/core/appmodule"
 	corestore "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
@@ -25,7 +26,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/kv"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -193,7 +193,7 @@ func (k Keeper) ScheduleUpgrade(ctx context.Context, plan types.Plan) error {
 
 	// NOTE: allow for the possibility of chains to schedule upgrades in begin block of the same block
 	// as a strategy for emergency hard fork recoveries
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	if plan.Height < sdkCtx.HeaderInfo().Height {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "upgrade cannot be scheduled in the past")
 	}
@@ -373,7 +373,7 @@ func (k Keeper) ClearUpgradePlan(ctx context.Context) error {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 
@@ -401,7 +401,7 @@ func (k Keeper) GetUpgradePlan(ctx context.Context) (plan types.Plan, err error)
 // setDone marks this upgrade name as being done so the name can't be reused accidentally
 func (k Keeper) setDone(ctx context.Context, name string) error {
 	store := k.storeService.OpenKVStore(ctx)
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	k.Logger(ctx).Debug("setting done", "height", sdkCtx.HeaderInfo().Height, "name", name)
 
 	return store.Set(encodeDoneKey(name, sdkCtx.HeaderInfo().Height), []byte{1})

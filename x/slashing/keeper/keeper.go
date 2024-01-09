@@ -6,6 +6,7 @@ import (
 
 	st "cosmossdk.io/api/cosmos/staking/v1beta1"
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
@@ -84,7 +85,7 @@ func (k Keeper) GetAuthority() string {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 

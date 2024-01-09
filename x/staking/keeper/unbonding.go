@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/x/staking/types"
 
@@ -282,7 +283,7 @@ func (k Keeper) unbondingDelegationEntryCanComplete(ctx context.Context, id uint
 	}
 	ubd.Entries[i].UnbondingOnHoldRefCount--
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	// Check if entry is matured.
 	if !ubd.Entries[i].OnHold() && ubd.Entries[i].IsMature(sdkCtx.HeaderInfo().Time) {
 		// If matured, complete it.

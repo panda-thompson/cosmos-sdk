@@ -11,6 +11,7 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	corestore "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -187,7 +188,7 @@ func (k Keeper) UpdateValidatorCommission(ctx context.Context,
 	validator types.Validator, newRate math.LegacyDec,
 ) (types.Commission, error) {
 	commission := validator.Commission
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.HeaderInfo().Time
 
 	if err := commission.ValidateNewRate(newRate, blockTime); err != nil {
@@ -481,7 +482,7 @@ func (k Keeper) DeleteValidatorQueue(ctx context.Context, val types.Validator) e
 // UnbondAllMatureValidators unbonds all the mature unbonding validators that
 // have finished their unbonding period.
 func (k Keeper) UnbondAllMatureValidators(ctx context.Context) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.HeaderInfo().Time
 	blockHeight := uint64(sdkCtx.BlockHeight())
 

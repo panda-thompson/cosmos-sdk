@@ -11,6 +11,7 @@ import (
 	collcodec "cosmossdk.io/collections/codec"
 	"cosmossdk.io/collections/indexes"
 	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/core/appmodule"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -317,7 +318,7 @@ func NewKeeper(
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 

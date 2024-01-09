@@ -10,6 +10,7 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"cosmossdk.io/core/address"
+	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/staking/types"
@@ -470,7 +471,7 @@ func (k Keeper) BeginUnbondingValidator(ctx context.Context, validator types.Val
 
 	validator = validator.UpdateStatus(types.Unbonding)
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	// set the unbonding completion time and completion height appropriately
 	validator.UnbondingTime = sdkCtx.HeaderInfo().Time.Add(params.UnbondingTime)
 	validator.UnbondingHeight = sdkCtx.HeaderInfo().Height

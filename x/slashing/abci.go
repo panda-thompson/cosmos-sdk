@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/x/slashing/keeper"
 	"cosmossdk.io/x/slashing/types"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // BeginBlocker check for infraction evidence or downtime of validators
@@ -19,7 +19,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	// Iterate over all the validators which *should* have signed this block
 	// store whether or not they have actually signed it and slash/unbond any
 	// which have missed too many blocks in a row (downtime slashing)
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	params, err := k.Params.Get(ctx)
 	if err != nil {
 		return err

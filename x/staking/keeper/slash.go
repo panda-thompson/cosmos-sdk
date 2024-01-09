@@ -7,6 +7,7 @@ import (
 
 	st "cosmossdk.io/api/cosmos/staking/v1beta1"
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
 	types "cosmossdk.io/x/staking/types"
 
@@ -36,7 +37,7 @@ import (
 //	but not at a height in the future
 func (k Keeper) Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec) (math.Int, error) {
 	logger := k.Logger(ctx)
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 
 	if slashFactor.IsNegative() {
 		return math.NewInt(0), fmt.Errorf("attempted to slash with a negative slash factor: %v", slashFactor)
@@ -302,7 +303,7 @@ func (k Keeper) SlashUnbondingDelegation(ctx context.Context, unbondingDelegatio
 func (k Keeper) SlashRedelegation(ctx context.Context, srcValidator types.Validator, redelegation types.Redelegation,
 	infractionHeight int64, slashFactor math.LegacyDec,
 ) (totalSlashAmount math.Int, err error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	now := sdkCtx.HeaderInfo().Time
 	totalSlashAmount = math.ZeroInt()
 	bondedBurnedAmount, notBondedBurnedAmount := math.ZeroInt(), math.ZeroInt()

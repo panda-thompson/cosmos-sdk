@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/staking/types"
@@ -655,7 +656,7 @@ func (k Keeper) InsertRedelegationQueue(ctx context.Context, red types.Redelegat
 func (k Keeper) DequeueAllMatureRedelegationQueue(ctx context.Context, currTime time.Time) (matureRedelegations []types.DVVTriplet, err error) {
 	var keys []time.Time
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 
 	// gets an iterator for all timeslices from time 0 until the current Blockheader time
 	rng := (&collections.Range[time.Time]{}).EndInclusive(sdkCtx.HeaderInfo().Time)
@@ -892,7 +893,7 @@ func (k Keeper) getBeginInfo(
 	if err != nil && errors.Is(err, types.ErrNoValidatorFound) {
 		return completionTime, height, false, nil
 	}
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	unbondingTime, err := k.UnbondingTime(ctx)
 	if err != nil {
 		return completionTime, height, false, err
@@ -958,7 +959,7 @@ func (k Keeper) Undelegate(
 		return time.Time{}, math.Int{}, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	completionTime := sdkCtx.HeaderInfo().Time.Add(unbondingTime)
 	ubd, err := k.SetUnbondingDelegationEntry(ctx, delAddr, valAddr, sdkCtx.BlockHeight(), completionTime, returnAmount)
 	if err != nil {
@@ -988,7 +989,7 @@ func (k Keeper) CompleteUnbonding(ctx context.Context, delAddr sdk.AccAddress, v
 	}
 
 	balances := sdk.NewCoins()
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	ctxTime := sdkCtx.HeaderInfo().Time
 
 	delegatorAddress, err := k.authKeeper.AddressCodec().StringToBytes(ubd.DelegatorAddress)
@@ -1133,7 +1134,7 @@ func (k Keeper) CompleteRedelegation(
 	}
 
 	balances := sdk.NewCoins()
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx := appmodule.UnwrapSDKContext(ctx)
 	ctxTime := sdkCtx.HeaderInfo().Time
 
 	// loop through all the entries and complete mature redelegation entries
