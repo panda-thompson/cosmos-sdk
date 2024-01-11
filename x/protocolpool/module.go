@@ -187,6 +187,7 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // RegisterStoreDecoder registers a decoder for protocolpool module's types
 func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
+	sdr[types.StoreKey] = simulation.NewDecodeStore(am.cdc)
 }
 
 // ProposalMsgs returns all the protocolpool msgs used to simulate governance proposals.
