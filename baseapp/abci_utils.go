@@ -415,6 +415,9 @@ func (ts *defaultTxSelector) SelectTxForProposal(_ context.Context, maxTxBytes, 
 	return ts.totalTxBytes >= maxTxBytes || (maxBlockGas > 0 && (ts.totalTxGas >= maxBlockGas))
 }
 
+// filterSameSenderTxs returns false if the transaction has a signer that is already present in another transaction in
+// this block AND its sequence is not sequential. Meaning that if we have a transaction from a signer with sequence 1 and
+// then another transaction from the same signer with sequence 3 we return false because the sequence is not sequential.
 func (ts *defaultTxSelector) filterSameSenderTxs(memTx sdk.Tx) bool {
 	if ts.selectedTxsSignersSeqs == nil {
 		ts.selectedTxsSignersSeqs = make(map[string]uint64)
