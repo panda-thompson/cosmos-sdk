@@ -357,10 +357,16 @@ type defaultTxSelector struct {
 	totalTxBytes uint64
 	totalTxGas   uint64
 	selectedTxs  [][]byte
+
+	selectedDecodedTxs     []sdk.Tx
+	signerExtAdapter       mempool.SignerExtractionAdapter
+	selectedTxsSignersSeqs map[string]uint64
 }
 
 func NewDefaultTxSelector() TxSelector {
-	return &defaultTxSelector{}
+	return &defaultTxSelector{
+		signerExtAdapter: mempool.NewDefaultSignerExtractionAdapter(),
+	}
 }
 
 func (ts *defaultTxSelector) SelectedTxs(_ context.Context) [][]byte {
@@ -373,6 +379,8 @@ func (ts *defaultTxSelector) Clear() {
 	ts.totalTxBytes = 0
 	ts.totalTxGas = 0
 	ts.selectedTxs = nil
+	ts.selectedDecodedTxs = nil
+	ts.selectedTxsSignersSeqs = make(map[string]uint64)
 }
 
 func (ts *defaultTxSelector) SelectTxForProposal(_ context.Context, maxTxBytes, maxBlockGas uint64, memTx sdk.Tx, txBz []byte) bool {
@@ -386,7 +394,7 @@ func (ts *defaultTxSelector) SelectTxForProposal(_ context.Context, maxTxBytes, 
 	}
 
 	// only add the transaction to the proposal if we have enough capacity
-	if (txSize + ts.totalTxBytes) <= maxTxBytes {
+	if (txSize+ts.totalTxBytes) <= maxTxBytes && ts.filterSameSenderTxs(memTx) {
 		// If there is a max block gas limit, add the tx only if the limit has
 		// not been met.
 		if maxBlockGas > 0 {
@@ -394,13 +402,48 @@ func (ts *defaultTxSelector) SelectTxForProposal(_ context.Context, maxTxBytes, 
 				ts.totalTxGas += txGasLimit
 				ts.totalTxBytes += txSize
 				ts.selectedTxs = append(ts.selectedTxs, txBz)
+				ts.selectedDecodedTxs = append(ts.selectedDecodedTxs, memTx)
 			}
 		} else {
 			ts.totalTxBytes += txSize
 			ts.selectedTxs = append(ts.selectedTxs, txBz)
+			ts.selectedDecodedTxs = append(ts.selectedDecodedTxs, memTx)
 		}
 	}
 
 	// check if we've reached capacity; if so, we cannot select any more transactions
 	return ts.totalTxBytes >= maxTxBytes || (maxBlockGas > 0 && (ts.totalTxGas >= maxBlockGas))
+}
+
+func (ts *defaultTxSelector) filterSameSenderTxs(memTx sdk.Tx) bool {
+	if ts.selectedTxsSignersSeqs == nil {
+		ts.selectedTxsSignersSeqs = make(map[string]uint64)
+	}
+
+	signerData, err := ts.signerExtAdapter.GetSigners(memTx)
+	if err != nil {
+		return false
+	}
+
+	// if the signers aren't in selectedTxsSignersSeqs then we haven't seen them before so we add them and return true
+	// so this tx gets selected.
+	shouldAdd := false
+	for _, signer := range signerData {
+		seq, ok := ts.selectedTxsSignersSeqs[string(signer.Signer)]
+		if !ok {
+			ts.selectedTxsSignersSeqs[string(signer.Signer)] = signer.Sequence
+			shouldAdd = true
+			continue
+		}
+
+		// if we have seen this signer before we check if the sequence we just got is seq+1 and if it is we update the
+		// sequence and return true so this tx gets selected. If it isn't seq+1 we return false so this tx doesn't get
+		// selected (it could be the same sequence or seq+2 which are invalid).
+		if seq+1 == signer.Sequence {
+			ts.selectedTxsSignersSeqs[string(signer.Signer)] = signer.Sequence
+			shouldAdd = true
+		}
+	}
+
+	return shouldAdd
 }
