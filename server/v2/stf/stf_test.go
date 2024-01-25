@@ -45,7 +45,7 @@ func TestSTF(t *testing.T) {
 			kvSet(t, ctx, "post-tx-exec")
 			return nil
 		},
-		branch: func(state store.GetReader) store.GetWriter {
+		branch: func(state store.ReaderMap) store.WriterMap {
 			return newBranchedAccountsState(state, func(readonlyState store.Reader) store.Writer {
 				return branch.NewStore(readonlyState)
 			})
@@ -149,7 +149,7 @@ func kvSet(t *testing.T, ctx context.Context, v string) {
 	require.NoError(t, state.Set([]byte(v), []byte(v)))
 }
 
-func stateHas(t *testing.T, accountState store.GetReader, key string) {
+func stateHas(t *testing.T, accountState store.ReaderMap, key string) {
 	t.Helper()
 	state, err := accountState.GetReader(actorName)
 	require.NoError(t, err)
@@ -158,7 +158,7 @@ func stateHas(t *testing.T, accountState store.GetReader, key string) {
 	require.Truef(t, has, "state did not have key: %s", key)
 }
 
-func stateNotHas(t *testing.T, accountState store.GetReader, key string) {
+func stateNotHas(t *testing.T, accountState store.ReaderMap, key string) {
 	t.Helper()
 	state, err := accountState.GetReader(actorName)
 	require.NoError(t, err)
