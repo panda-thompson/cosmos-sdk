@@ -14,7 +14,7 @@ import (
 	"cosmossdk.io/server/v2/core/store"
 )
 
-var runtimeIdentity transaction.Identity = []byte("runtime") // TODO: most likely should be moved to core somewhere.
+var runtimeIdentity = []byte("runtime") // TODO: most likely should be moved to core somewhere.
 
 // STF is a struct that manages the state transition component of the app.
 type STF[T transaction.Tx] struct {
@@ -29,7 +29,6 @@ type STF[T transaction.Tx] struct {
 	doTxValidation func(ctx context.Context, tx T) error // TODO: rewrite antehandlers remove simulate
 	postTxExec     func(ctx context.Context, tx T, success bool) error
 	branch         func(state store.GetReader) store.GetWriter // branch is a function that given a readonly store it returns a writable version of it.
-	// TODO: add gas store
 }
 
 // NewSTF returns a new STF instance.
@@ -87,11 +86,8 @@ func (s STF[T]) DeliverBlock(ctx context.Context, block *appmanager.BlockRequest
 	}
 
 	// check if we need to return early
-	select {
-	case <-ctx.Done():
-		return nil, nil, ctx.Err()
-	default:
-		// continue
+	if err = isCtxCancelled(ctx); err != nil {
+		return nil, nil, err
 	}
 
 	// execute txs
@@ -99,12 +95,10 @@ func (s STF[T]) DeliverBlock(ctx context.Context, block *appmanager.BlockRequest
 	// TODO: skip first tx if vote extensions are enabled (marko)
 	for i, txBytes := range block.Txs {
 		// check if we need to return early or continue delivering txs
-		select {
-		case <-ctx.Done():
-			return nil, nil, ctx.Err()
-		default:
-			txResults[i] = s.deliverTx(ctx, newState, txBytes)
+		if err = isCtxCancelled(ctx); err != nil {
+			return nil, nil, err
 		}
+		txResults[i] = s.deliverTx(ctx, newState, txBytes)
 	}
 	// end block
 	endBlockEvents, valset, err := s.endBlock(ctx, newState)
@@ -333,8 +327,6 @@ type executionContext struct {
 	gasLimit uint64
 	events   []event.Event
 	sender   []transaction.Identity
-	// TODO: add gas meter/kv
-	// TODO: add services
 }
 
 func (s STF[T]) makeContext(
@@ -360,4 +352,14 @@ func applyStateChanges(dst, src store.GetWriter) error {
 		return err
 	}
 	return dst.ApplyStateChanges(changes)
+}
+
+// isCtxCancelled reports if the context was cancelled.
+func isCtxCancelled(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
 }
