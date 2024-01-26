@@ -6,9 +6,11 @@ import (
 	"fmt"
 
 	"cosmossdk.io/server/v2/core/appmanager"
+	"cosmossdk.io/server/v2/core/stf"
 	"cosmossdk.io/server/v2/core/store"
 	"cosmossdk.io/server/v2/core/transaction"
 	"cosmossdk.io/server/v2/stf/branch"
+	"cosmossdk.io/server/v2/stf/gas"
 )
 
 func NewSTFBuilder[T transaction.Tx]() *STFBuilder[T] {
@@ -20,14 +22,19 @@ func NewSTFBuilder[T transaction.Tx]() *STFBuilder[T] {
 		beginBlockers:      make(map[string]func(ctx context.Context) error),
 		endBlockers:        make(map[string]func(ctx context.Context) error),
 		postExecHandler:    make(map[string]func(ctx context.Context, tx T, success bool) error),
-		branch:             func(state store.Reader) store.Writer { return branch.NewStore(state) },
+		branch:             branch.DefaultNewWriterMap,
+		getGasMeter:        gas.DefaultGetMeter,
+		wrapWithGasMeter:   gas.DefaultWrapWithGasMeter,
 	}
 }
 
 type STFBuilder[T transaction.Tx] struct {
 	err error
 
-	branch             func(state store.Reader) store.Writer
+	branch           func(state store.ReaderMap) store.WriterMap // branch is a function that given a readonly state it returns a writable version of it.
+	getGasMeter      func(gasLimit uint64) stf.GasMeter
+	wrapWithGasMeter func(meter stf.GasMeter, store store.WriterMap) store.WriterMap
+
 	msgRouterBuilder   *msgRouterBuilder
 	queryRouterBuilder *msgRouterBuilder
 	txValidators       map[string]func(ctx context.Context, tx T) error
@@ -69,12 +76,17 @@ func (s *STFBuilder[T]) Build(opts *STFBuilderOptions) (*STF[T], error) {
 		return nil, fmt.Errorf("unable to build tx validator: %w", err)
 	}
 	return &STF[T]{
-		handleMsg:      msgHandler,
-		handleQuery:    queryHandler,
-		doBeginBlock:   beginBlocker,
-		doEndBlock:     endBlocker,
-		doTxValidation: txValidator,
-		branch:         nil, // TODO
+		handleMsg:         msgHandler,
+		handleQuery:       queryHandler,
+		doPreBlock:        nil,
+		doBeginBlock:      beginBlocker,
+		doEndBlock:        endBlocker,
+		doValidatorUpdate: nil,
+		doTxValidation:    txValidator,
+		postTxExec:        nil,
+		branch:            s.branch,
+		getGasMeter:       s.getGasMeter,
+		wrapWithGasMeter:  s.wrapWithGasMeter,
 	}, nil
 }
 

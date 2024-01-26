@@ -33,7 +33,7 @@ type gasService struct {
 }
 
 func (g gasService) GetGasMeter(ctx context.Context) gas.Meter {
-	return ctx.(*executionContext).meter
+	panic("impl")
 }
 
 func (g gasService) GetBlockGasMeter(ctx context.Context) gas.Meter {
