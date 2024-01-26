@@ -4,9 +4,15 @@ go 1.21
 
 require (
 	cosmossdk.io/core v0.11.0
+	cosmossdk.io/server/v2/stf v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/stretchr/testify v1.8.4
 	pgregory.net/rapid v1.1.0
+)
+
+replace cosmossdk.io/server/v2/stf => ../server/v2/stf
+replace (
+	cosmossdk.io/server/v2/core => ../server/v2/core
 )
 
 require (

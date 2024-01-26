@@ -9,6 +9,7 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
+	"cosmossdk.io/server/v2/stf/objcache"
 )
 
 // SchemaBuilder is used for building schemas. The Build method should always
@@ -34,7 +35,14 @@ func NewSchemaBuilderFromAccessor(accessorFunc func(ctx context.Context) store.K
 // Callers should always call the SchemaBuilder.Build method when they are
 // done adding collections to the schema.
 func NewSchemaBuilder(service store.KVStoreService) *SchemaBuilder {
-	return NewSchemaBuilderFromAccessor(service.OpenKVStore)
+	sb := NewSchemaBuilderFromAccessor(service.OpenKVStore)
+	kl, ok := service.(interface {
+		OpenKeyLessContainer(ctx context.Context) objcache.KeylessContainer
+	})
+	if ok {
+		sb.schema.keylessContainer = kl.OpenKeyLessContainer
+	}
+	return sb
 }
 
 // Build should be called after all collections that are part of the schema
@@ -126,6 +134,7 @@ var nameRegex = regexp.MustCompile("^" + NameRegex + "$")
 // clients.
 type Schema struct {
 	storeAccessor       func(context.Context) store.KVStore
+	keylessContainer    func(ctx context.Context) objcache.KeylessContainer
 	collectionsOrdered  []string
 	collectionsByPrefix map[string]Collection
 	collectionsByName   map[string]Collection

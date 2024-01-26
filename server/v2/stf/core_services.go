@@ -5,6 +5,7 @@ import (
 
 	"cosmossdk.io/core/gas"
 	"cosmossdk.io/core/store"
+	"cosmossdk.io/server/v2/stf/objcache"
 )
 
 var _ store.KVStoreService = (*storeService)(nil)
@@ -25,6 +26,9 @@ func (s storeService) OpenKVStore(ctx context.Context) store.KVStore {
 	return state
 }
 
+func (s storeService) OpenKeyLessContainer(ctx context.Context) objcache.KeylessContainer {
+	return ctx.(*executionContext).objCache.GetKeylessContainer(s.actor)
+}
 func NewGasMeterService() gas.Service {
 	return gasService{}
 }

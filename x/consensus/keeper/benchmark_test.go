@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	stfcore "cosmossdk.io/server/v2/core/stf"
 	"cosmossdk.io/server/v2/stf"
 	"cosmossdk.io/server/v2/stf/branch"
 	"cosmossdk.io/server/v2/stf/mock"
@@ -35,7 +36,7 @@ var benchConsensusParams = cmtproto.ConsensusParams{
 	},
 }
 
-func Benchmark_GettingParams(b *testing.B) {
+func Benchmark_SDKContext(b *testing.B) {
 	key := storetypes.NewKVStoreKey(StoreKey)
 	testCtx := testutil.DefaultContextWithDB(b, key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx
@@ -58,6 +59,7 @@ func Benchmark_GettingParams(b *testing.B) {
 	if sink == nil {
 		b.Fatal("failed bench")
 	}
+	b.Log(sink)
 }
 
 func Benchmark_STFContext(b *testing.B) {
@@ -66,7 +68,7 @@ func Benchmark_STFContext(b *testing.B) {
 
 	s, err := stf.NewSTFBuilder[mock.Tx]().Build(&stf.STFBuilderOptions{})
 	require.NoError(b, err)
-	ctx := s.MakeContext(context.Background(), nil, db, 10000)
+	ctx := s.MakeContext(context.Background(), nil, db, stfcore.NoGasLimit-1)
 
 	keeper := NewKeeper(moduletestutil.MakeTestEncodingConfig().Codec, storeService, authtypes.NewModuleAddress("gov").String(), runtime.EventService{})
 	err = keeper.ParamsStore.Set(ctx, benchConsensusParams)
@@ -84,4 +86,6 @@ func Benchmark_STFContext(b *testing.B) {
 	if sink == nil {
 		b.Fatal("failed bench")
 	}
+
+	b.Log(sink)
 }

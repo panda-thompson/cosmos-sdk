@@ -11,6 +11,7 @@ import (
 	"cosmossdk.io/server/v2/core/stf"
 	"cosmossdk.io/server/v2/core/store"
 	"cosmossdk.io/server/v2/core/transaction"
+	"cosmossdk.io/server/v2/stf/objcache"
 )
 
 var runtimeIdentity = []byte("runtime") // TODO: most likely should be moved to core somewhere.
@@ -313,10 +314,11 @@ func (s STF[T]) clone() STF[T] {
 type executionContext struct {
 	context.Context
 
-	state  store.WriterMap
-	meter  stf.GasMeter
-	events []event.Event
-	sender []transaction.Identity
+	objCache objcache.NamespacedKeylessContainer
+	state    store.WriterMap
+	meter    stf.GasMeter
+	events   []event.Event
+	sender   []transaction.Identity
 }
 
 func (s STF[T]) MakeContext(
@@ -329,11 +331,12 @@ func (s STF[T]) MakeContext(
 	meter := s.getGasMeter(gasLimit)
 	store = s.wrapWithGasMeter(meter, store)
 	return &executionContext{
-		Context: ctx,
-		state:   store,
-		meter:   meter,
-		events:  make([]event.Event, 0),
-		sender:  sender,
+		Context:  ctx,
+		objCache: objcache.NewNamespacedKeylessContainer(),
+		state:    store,
+		meter:    meter,
+		events:   make([]event.Event, 0),
+		sender:   sender,
 	}
 }
 

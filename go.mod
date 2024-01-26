@@ -195,6 +195,7 @@ replace (
 replace (
 	cosmossdk.io/server/v2/core => ./server/v2/core
 	cosmossdk.io/server/v2/stf => ./server/v2/stf
+	cosmossdk.io/collections => ./collections
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
