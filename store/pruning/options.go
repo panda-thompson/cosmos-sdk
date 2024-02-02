@@ -14,6 +14,16 @@ type Options struct {
 	Sync bool
 }
 
+func (o Options) ShouldPrune(height uint64) bool {
+	if o.Interval == 0 {
+		return false
+	}
+	if height > o.KeepRecent && height%o.Interval == 0 {
+		return true
+	}
+	return false
+}
+
 // DefaultOptions returns the default pruning options.
 // Interval is set to 0, which means no pruning will be done.
 func DefaultOptions() Options {
