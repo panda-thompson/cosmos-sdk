@@ -3,15 +3,15 @@ package signing
 import (
 	"errors"
 	"fmt"
+	"runtime/debug"
 
+	msgv1 "cosmossdk.io/api/cosmos/msg/v1"
+	"cosmossdk.io/core/address"
 	cosmos_proto "github.com/cosmos/cosmos-proto"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-
-	msgv1 "cosmossdk.io/api/cosmos/msg/v1"
-	"cosmossdk.io/core/address"
 )
 
 type TypeResolver interface {
@@ -162,6 +162,7 @@ func (c *Context) Validate() error {
 				}
 				_, err := c.getGetSignersFn(md)
 				if err != nil {
+					fmt.Println("HERE GOES THE ERROR2!: ", err)
 					errs = append(errs, err)
 				}
 			}
@@ -174,6 +175,11 @@ func (c *Context) Validate() error {
 }
 
 func (c *Context) makeGetSignersFunc(descriptor protoreflect.MessageDescriptor) (GetSignersFunc, error) {
+	if descriptor.FullName() == "cosmos.gov.v1beta1.MsgSubmitProposal" {
+		fmt.Println("makeGetSignersFunc with cosmos.gov.v1beta1.MsgSubmitProposal")
+		debug.PrintStack()
+	}
+
 	signersFields, err := getSignersFieldNames(descriptor)
 	if err != nil {
 		return nil, err
@@ -209,6 +215,12 @@ func (c *Context) makeGetSignersFunc(descriptor protoreflect.MessageDescriptor) 
 				}
 			} else {
 				fieldGetters[i] = func(msg proto.Message, arr [][]byte) ([][]byte, error) {
+					// descriptor.Messages().Get(0).
+					// HERE's THE PANIC!
+					// descriptor.
+					// if descriptor.FullName() == "cosmos.gov.v1beta1.MsgSubmitProposal" {
+					// 	fmt.Println("ARE THESE EQUAL?!", msg.ProtoReflect().Descriptor() == govv1beta1.MMDD_MsgSubmitProposal, descriptor == govv1beta1.MMDD_MsgSubmitProposal)
+					// }
 					addrStr := msg.ProtoReflect().Get(field).String()
 					addrBz, err := addrCdc.StringToBytes(addrStr)
 					if err != nil {
@@ -341,8 +353,12 @@ func (c *Context) getGetSignersFn(messageDescriptor protoreflect.MessageDescript
 			return nil, err
 		}
 		c.getSignersFuncs[messageDescriptor.FullName()] = f
-	}
 
+		if messageDescriptor.FullName() == "cosmos.gov.v1beta1.MsgSubmitProposal" {
+			fmt.Println("SET FOR THE FIRST TIME getGetSignersFn with cosmos.gov.v1beta1.MsgSubmitProposal")
+			debug.PrintStack()
+		}
+	}
 	return f, nil
 }
 

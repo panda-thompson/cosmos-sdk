@@ -71,6 +71,7 @@ func (x *_MsgSubmitProposal_2_list) IsValid() bool {
 
 var (
 	md_MsgSubmitProposal                 protoreflect.MessageDescriptor
+	MMDD_MsgSubmitProposal    protoreflect.MessageDescriptor
 	fd_MsgSubmitProposal_content         protoreflect.FieldDescriptor
 	fd_MsgSubmitProposal_initial_deposit protoreflect.FieldDescriptor
 	fd_MsgSubmitProposal_proposer        protoreflect.FieldDescriptor
@@ -79,6 +80,7 @@ var (
 func init() {
 	file_cosmos_gov_v1beta1_tx_proto_init()
 	md_MsgSubmitProposal = File_cosmos_gov_v1beta1_tx_proto.Messages().ByName("MsgSubmitProposal")
+	MMDD_MsgSubmitProposal = md_MsgSubmitProposal
 	fd_MsgSubmitProposal_content = md_MsgSubmitProposal.Fields().ByName("content")
 	fd_MsgSubmitProposal_initial_deposit = md_MsgSubmitProposal.Fields().ByName("initial_deposit")
 	fd_MsgSubmitProposal_proposer = md_MsgSubmitProposal.Fields().ByName("proposer")

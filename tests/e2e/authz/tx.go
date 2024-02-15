@@ -317,7 +317,7 @@ func (s *E2ETestSuite) TestNewExecGenericAuthorized() {
 				s.Require().NoError(err)
 				s.Require().NoError(clientCtx.Codec.UnmarshalJSON(out.Bytes(), tc.respType), out.String())
 				txResp := tc.respType.(*sdk.TxResponse)
-				s.Require().NoError(clitestutil.CheckTxCode(s.network, val.GetClientCtx(), txResp.TxHash, tc.expectedCode))
+				s.Require().NoError(clitestutil.CheckTxCode(s.network, val.GetClientCtx(), txResp.TxHash, tc.expectedCode), out.String())
 			}
 		})
 	}

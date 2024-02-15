@@ -469,15 +469,15 @@ func (s *ABCIUtilsTestSuite) TestDefaultProposalHandler_PriorityNonceMempoolTxSe
 		testTxs[i].size = int(cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{bz}))
 	}
 
-	s.Require().Equal(testTxs[0].size, 111)
-	s.Require().Equal(testTxs[1].size, 121)
-	s.Require().Equal(testTxs[2].size, 112)
-	s.Require().Equal(testTxs[3].size, 112)
-	s.Require().Equal(testTxs[4].size, 195)
-	s.Require().Equal(testTxs[5].size, 205)
-	s.Require().Equal(testTxs[6].size, 196)
-	s.Require().Equal(testTxs[7].size, 196)
-	s.Require().Equal(testTxs[8].size, 196)
+	s.Require().Equal(159, testTxs[0].size)
+	s.Require().Equal(169, testTxs[1].size)
+	s.Require().Equal(160, testTxs[2].size)
+	s.Require().Equal(160, testTxs[3].size)
+	s.Require().Equal(242, testTxs[4].size)
+	s.Require().Equal(252, testTxs[5].size)
+	s.Require().Equal(243, testTxs[6].size)
+	s.Require().Equal(243, testTxs[7].size)
+	s.Require().Equal(243, testTxs[8].size)
 
 	testCases := map[string]struct {
 		ctx         sdk.Context
@@ -490,7 +490,7 @@ func (s *ABCIUtilsTestSuite) TestDefaultProposalHandler_PriorityNonceMempoolTxSe
 			ctx:      s.ctx,
 			txInputs: []testTx{testTxs[0], testTxs[1], testTxs[2], testTxs[3]},
 			req: &abci.RequestPrepareProposal{
-				MaxTxBytes: 111 + 112,
+				MaxTxBytes: 159 + 160,
 			},
 			expectedTxs: []int{0, 3},
 		},
@@ -498,7 +498,7 @@ func (s *ABCIUtilsTestSuite) TestDefaultProposalHandler_PriorityNonceMempoolTxSe
 			ctx:      s.ctx,
 			txInputs: []testTx{testTxs[4], testTxs[5], testTxs[6], testTxs[7], testTxs[8]},
 			req: &abci.RequestPrepareProposal{
-				MaxTxBytes: 195 + 196,
+				MaxTxBytes: 242 + 243,
 			},
 			expectedTxs: []int{4, 8},
 		},
@@ -507,7 +507,7 @@ func (s *ABCIUtilsTestSuite) TestDefaultProposalHandler_PriorityNonceMempoolTxSe
 			ctx:      s.ctx,
 			txInputs: []testTx{testTxs[9], testTxs[10], testTxs[11]},
 			req: &abci.RequestPrepareProposal{
-				MaxTxBytes: 195 + 196,
+				MaxTxBytes: 242 + 243,
 			},
 			expectedTxs: []int{9},
 		},
@@ -517,7 +517,7 @@ func (s *ABCIUtilsTestSuite) TestDefaultProposalHandler_PriorityNonceMempoolTxSe
 			ctx:      s.ctx,
 			txInputs: []testTx{testTxs[12], testTxs[13], testTxs[14]},
 			req: &abci.RequestPrepareProposal{
-				MaxTxBytes: 112,
+				MaxTxBytes: 160,
 			},
 			expectedTxs: []int{},
 		},
@@ -571,8 +571,11 @@ func marshalDelimitedFn(msg proto.Message) ([]byte, error) {
 func buildMsg(t *testing.T, txConfig client.TxConfig, value []byte, secrets [][]byte, nonces []uint64) sdk.Tx {
 	t.Helper()
 	builder := txConfig.NewTxBuilder()
+
+	// set messages with a random signer to avoid a missing signer error
+	privKey := secp256k1.GenPrivKeyFromSecret(secrets[0])
 	_ = builder.SetMsgs(
-		&baseapptestutil.MsgKeyValue{Value: value},
+		&baseapptestutil.MsgKeyValue{Value: value, Signer: sdk.AccAddress(privKey.PubKey().Address()).String()},
 	)
 	require.Equal(t, len(secrets), len(nonces))
 	signatures := make([]signingtypes.SignatureV2, 0)
