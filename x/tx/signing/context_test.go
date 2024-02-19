@@ -2,16 +2,18 @@ package signing
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 
 	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 	groupv1 "cosmossdk.io/api/cosmos/group/v1"
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/x/tx/internal/testpb"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 var deeplyNestedRepeatedSigner = &testpb.DeeplyNestedRepeatedSigner{
@@ -217,6 +219,34 @@ func TestMaxRecursionDepth(t *testing.T) {
 	require.NoError(t, err)
 	_, err = ctx.GetSigners(deeplyNestedRepeatedSigner)
 	require.NoError(t, err)
+}
+
+func TestStaticThenDyanmicPb(t *testing.T) {
+	ctx, err := NewContext(Options{
+		AddressCodec:          dummyAddressCodec{},
+		ValidatorAddressCodec: dummyValidatorAddressCodec{},
+		MaxRecursionDepth:     1,
+	})
+	require.NoError(t, err)
+
+	staticMsg := &testpb.SimpleSigner{Signer: hex.EncodeToString([]byte("foo"))}
+	signerBz, err := ctx.GetSigners(staticMsg)
+	require.NoError(t, err)
+	fmt.Println(string(signerBz[0]))
+
+	dyanmicMsgType := dynamicpb.NewMessageType(staticMsg.ProtoReflect().Descriptor())
+	fields := dyanmicMsgType.Descriptor().Fields()
+	var field protoreflect.FieldDescriptor
+	for i := 0; i < fields.Len(); i++ {
+		field = fields.Get(i)
+		fmt.Println(field.Name())
+	}
+
+	dyanmicMsg := dynamicpb.NewMessage(staticMsg.ProtoReflect().Descriptor())
+	dyanmicMsg.Set(field, protoreflect.ValueOfString(hex.EncodeToString([]byte("foo"))))
+	signerBz, err = ctx.GetSigners(dyanmicMsg)
+	require.NoError(t, err)
+	fmt.Println(string(signerBz[0]))
 }
 
 func TestDefineCustomGetSigners(t *testing.T) {

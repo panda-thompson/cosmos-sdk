@@ -155,6 +155,10 @@ func (c *Context) Validate() error {
 
 			for j := 0; j < sd.Methods().Len(); j++ {
 				md := sd.Methods().Get(j).Input()
+				if md.FullName() == "cosmos.gov.v1beta1.MsgSubmitProposal" {
+					fmt.Println("context.Validate FileDescriptor", fd.Path())
+					fmt.Println("validate caching message cosmos.gov.v1beta1.MsgSubmitProposal")
+				}
 				_, hasCustomSigner := c.customGetSignerFuncs[md.FullName()]
 				if _, err := getSignersFieldNames(md); err == nil && hasCustomSigner {
 					errs = append(errs, fmt.Errorf("a custom signer function as been defined for message %s which already has a signer field defined with (cosmos.msg.v1.signer)", md.FullName()))
@@ -332,6 +336,9 @@ func (c *Context) getGetSignersFn(messageDescriptor protoreflect.MessageDescript
 	f, ok := c.customGetSignerFuncs[messageDescriptor.FullName()]
 	if ok {
 		return f, nil
+	}
+	if messageDescriptor.FullName() == "cosmos.gov.v1beta1.MsgSubmitProposal" {
+		fmt.Println("getSignersFn for cosmos.gov.v1beta1.MsgSubmitProposal")
 	}
 	f, ok = c.getSignersFuncs[messageDescriptor.FullName()]
 	if !ok {

@@ -822,6 +822,9 @@ func (app *BaseApp) endBlock(ctx context.Context) (sdk.EndBlock, error) {
 // returned if the tx does not run out of gas and if all the messages are valid
 // and execute successfully. An error is returned otherwise.
 func (app *BaseApp) runTx(mode execMode, txBytes []byte) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, err error) {
+	if len(txBytes) == 360 {
+		fmt.Println("txBytes", txBytes)
+	}
 	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
 	// determined by the GasMeter. We need access to the context to get the gas
 	// meter, so we initialize upfront.

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	//_ "cosmossdk.io/api/cosmos/gov/v1beta1"
 	"cosmossdk.io/simapp"
 	v1 "cosmossdk.io/x/gov/types/v1"
 

@@ -12,6 +12,8 @@ message streng {
 }
 
 message TestRepeatedFields {
+  option (cosmos.msg.v1.signer) = "nullable_omitempty";
+
   repeated streng nullable_omitempty = 1;
 
   // not supported for empty sets
@@ -56,6 +58,11 @@ message IntAsBytes {
     (amino.dont_omitempty) = true,
     (gogoproto.nullable)   = false
   ];
+}
+
+message SimpleSigner {
+  option (cosmos.msg.v1.signer) = "signer";
+  string signer                 = 1;
 }
 
 service IntegrationTxTestMsg {

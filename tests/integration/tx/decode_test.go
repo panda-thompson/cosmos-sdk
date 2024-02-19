@@ -1,13 +1,17 @@
 package tx
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-proto/rapidproto"
 	gogoproto "github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"pgregory.net/rapid"
 
 	msgv1 "cosmossdk.io/api/cosmos/msg/v1"
@@ -32,6 +36,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/tests/integration/rapidgen"
+	"github.com/cosmos/cosmos-sdk/tests/integration/tx/registry/aaa"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module/testutil"
@@ -171,4 +176,38 @@ func (d dummyAddressCodec) StringToBytes(text string) ([]byte, error) {
 
 func (d dummyAddressCodec) BytesToString(bz []byte) (string, error) {
 	return string(bz), nil
+}
+
+var (
+	_ address.Codec = dummyAddressCodec{}
+)
+
+func TestGogoFieldDescriptorWithDynamicPbMessage(t *testing.T) {
+	ctx := aaa.SigningContextWithGogoRegisteredType
+	err := ctx.Validate()
+	require.NoError(t, err)
+
+	fd, err := gogoproto.HybridResolver.FindFileByPath("testpb/test.proto")
+	require.NoError(t, err)
+	var md protoreflect.MessageDescriptor
+	for i := 0; i < fd.Messages().Len(); i++ {
+		if fd.Messages().Get(i).Name() == "SimpleSigner" {
+			md = fd.Messages().Get(i)
+		}
+	}
+	require.NotNil(t, md)
+
+	dyanmicMsgType := dynamicpb.NewMessageType(md)
+	fields := dyanmicMsgType.Descriptor().Fields()
+	var field protoreflect.FieldDescriptor
+	for i := 0; i < fields.Len(); i++ {
+		field = fields.Get(i)
+		fmt.Println(field.Name())
+	}
+
+	dyanmicMsg := dynamicpb.NewMessage(md)
+	dyanmicMsg.Set(field, protoreflect.ValueOfString("foo"))
+	signerBz, err := ctx.GetSigners(dyanmicMsg)
+	require.NoError(t, err)
+	fmt.Println(string(signerBz[0]))
 }
