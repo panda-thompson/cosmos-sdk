@@ -1,6 +1,7 @@
 package simapp
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -11,28 +12,42 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/anypb"
+	"gotest.tools/assert"
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/accounts"
 	"cosmossdk.io/x/auth"
+	authsigning "cosmossdk.io/x/auth/signing"
+	authtypes "cosmossdk.io/x/auth/types"
 	"cosmossdk.io/x/auth/vesting"
+	"cosmossdk.io/x/authz"
 	authzmodule "cosmossdk.io/x/authz/module"
 	"cosmossdk.io/x/bank"
 	banktypes "cosmossdk.io/x/bank/types"
 	"cosmossdk.io/x/distribution"
 	"cosmossdk.io/x/evidence"
+	"cosmossdk.io/x/feegrant"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/gov"
+	"cosmossdk.io/x/gov/types"
+	v1 "cosmossdk.io/x/gov/types/v1"
+	"cosmossdk.io/x/gov/types/v1beta1"
 	group "cosmossdk.io/x/group/module"
 	"cosmossdk.io/x/mint"
 	"cosmossdk.io/x/protocolpool"
 	"cosmossdk.io/x/slashing"
 	"cosmossdk.io/x/staking"
+	txsigning "cosmossdk.io/x/tx/signing"
 	"cosmossdk.io/x/upgrade"
+	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 
+	govv1beta1 "cosmossdk.io/api/cosmos/gov/v1beta1"
+	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
@@ -42,6 +57,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
+
+	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
+	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
 func TestSimAppExportAndBlockedAddrs(t *testing.T) {
@@ -355,4 +374,120 @@ func TestAddressCodecFactory(t *testing.T) {
 	require.NotNil(t, consAddressCodec)
 	_, ok = consAddressCodec.(customAddressCodec)
 	require.True(t, ok)
+}
+
+func TestCustom(t *testing.T) {
+	db := dbm.NewMemDB()
+	app := NewSimApp(log.NewTestLogger(t), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+
+	app.BankKeeper.SetDenomMetaData(
+		ctx,
+		banktypes.Metadata{
+			Description: "The native staking token of the Cosmos Hub.",
+			Base:        "uatom",
+			Display:     "ATOM",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "ATOM",
+					Exponent: 6,
+				},
+			},
+		},
+	)
+
+	// the MsgGrantAllowance message
+	allowanceAny, err := codectypes.NewAnyWithValue(&feegrant.BasicAllowance{SpendLimit: sdk.NewCoins(sdk.NewCoin("foo", math.NewInt(100)))})
+	require.NoError(t, err)
+	feegrantmsg := &feegrant.MsgGrantAllowance{Granter: "cosmos1qperwt9wrnkg5k9e5gzfgjppzpq0ah2h2l6mc5", Grantee: "cosmos1yeckxz7tapz34kjwnjxvmxzurerquhtrmx5j6g", Allowance: allowanceAny}
+
+	// the MsgSubmitProposal message with a TextProposal
+	newProposalMsg, _ := v1.NewMsgSubmitProposal(
+		[]sdk.Msg{mkTestLegacyContent(t)},
+		sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 100000)},
+		"cosmos1qperwt9wrnkg5k9e5gzfgjppzpq0ah2h2l6mc5",
+		"",
+		"Proposal",
+		"description of proposal",
+		v1.ProposalType_PROPOSAL_TYPE_STANDARD,
+	)
+
+	//authz grant
+	m := &authz.MsgGrant{
+		Granter: "cosmos1qperwt9wrnkg5k9e5gzfgjppzpq0ah2h2l6mc5",
+		Grantee: "cosmos1yeckxz7tapz34kjwnjxvmxzurerquhtrmx5j6g",
+	}
+	g := authz.GenericAuthorization{Msg: "some_type_of_msg/MsgSomeTypeOfMsg"}
+	m.Grant.Authorization, _ = codectypes.NewAnyWithValue(&g)
+
+	msgs := []proto.Message{
+		&bankv1beta1.MsgSend{
+			FromAddress: "cosmos1qperwt9wrnkg5k9e5gzfgjppzpq0ah2h2l6mc5",
+			ToAddress:   "cosmos1yeckxz7tapz34kjwnjxvmxzurerquhtrmx5j6g",
+			Amount: []*basev1beta1.Coin{{
+				Denom:  "uatom",
+				Amount: "1000000",
+			}},
+		},
+		&govv1beta1.MsgVote{
+			ProposalId: 1,
+			Voter:      "cosmos1qperwt9wrnkg5k9e5gzfgjppzpq0ah2h2l6mc5",
+			Option:     govv1beta1.VoteOption_VOTE_OPTION_YES,
+		},
+		newProposalMsg,
+		feegrantmsg,
+		m,
+	}
+
+	txBuilder := app.TxConfig().NewTxBuilder()
+	txBuilder.SetMsgs(msgs...)
+	txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("uatom", math.NewInt(1000))))
+	txBuilder.SetGasLimit(200000)
+	txBuilder.SetMemo("test")
+	tx := txBuilder.GetTx()
+
+	_, pubkey, _ := testdata.KeyTestPubAddr()
+	anyPk, _ := codectypes.NewAnyWithValue(pubkey)
+
+	signerData := txsigning.SignerData{
+		Address:       "cosmos1qperwt9wrnkg5k9e5gzfgjppzpq0ah2h2l6mc5",
+		ChainID:       "test-chain",
+		AccountNumber: 3,
+		Sequence:      123,
+		PubKey: &anypb.Any{
+			TypeUrl: anyPk.TypeUrl,
+			Value:   anyPk.Value,
+		},
+	}
+	adaptableTx, ok := tx.(authsigning.V2AdaptableTx)
+	if !ok {
+		panic("tx does not implement V2AdaptableTx")
+	}
+	txData := adaptableTx.GetSigningTxData()
+
+	signbytes, err := app.TxConfig().SignModeHandler().GetSignBytes(
+		ctx,
+		signingv1beta1.SignMode_SIGN_MODE_TEXTUAL,
+		signerData,
+		txData,
+	)
+
+	require.NoError(t, err)
+
+	panic(hex.EncodeToString(signbytes))
+
+	/*
+		a101982ca20168436861696e206964026a746573742d636861696ea2016e4163636f756e74206e756d626572026133a2016853657175656e63650263313233a301674164647265737302782d636f736d6f73317170657277743977726e6b67356b396535677a66676a70707a70713061683268326c366d633504f5a3016a5075626c6963206b657902781f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657904f5a401634b657902785230323443204538324620314538462039343245204541413920363543332043363741204144413920423031412035383841203139333120424430442030324235203636324520353543452035313941204134030104f5a102781f54686973207472616e73616374696f6e206861732035204d65737361676573a3016d4d6573736167652028312f352902781c2f636f736d6f732e62616e6b2e763162657461312e4d736753656e640301a3016c46726f6d206164647265737302782d636f736d6f73317170657277743977726e6b67356b396535677a66676a70707a70713061683268326c366d63350302a3016a546f206164647265737302782d636f736d6f73317965636b787a377461707a33346b6a776e6a78766d787a7572657271756874726d78356a36670302a30166416d6f756e74026f312730303027303030207561746f6d0302a3016d4d6573736167652028322f352902781b2f636f736d6f732e676f762e763162657461312e4d7367566f74650301a3016b50726f706f73616c2069640261310302a30165566f74657202782d636f736d6f73317170657277743977726e6b67356b396535677a66676a70707a70713061683268326c366d63350302a301664f7074696f6e026f564f54455f4f5054494f4e5f5945530302a3016d4d6573736167652028332f35290278202f636f736d6f732e676f762e76312e4d73675375626d697450726f706f73616c0301a301684d6573736167657302653120416e790302a3016e4d657373616765732028312f31290278232f636f736d6f732e676f762e76312e4d7367457865634c6567616379436f6e74656e740303a30167436f6e74656e740278202f636f736d6f732e676f762e763162657461312e5465787450726f706f73616c0304a301655469746c650264546573740305a3016b4465736372697074696f6e026b6465736372697074696f6e0305a30169417574686f7269747902782d636f736d6f73313064303779323635676d6d757674347a30773961773838306a6e73723730306a367a6e396b6e0304a2026f456e64206f66204d657373616765730302a3016f496e697469616c206465706f736974026d31303027303030207374616b650302a3016850726f706f73657202782d636f736d6f73317170657277743977726e6b67356b396535677a66676a70707a70713061683268326c366d63350302a301655469746c65026850726f706f73616c0302a3016753756d6d61727902776465736372697074696f6e206f662070726f706f73616c0302a3016d50726f706f73616c2074797065027650524f504f53414c5f545950455f5354414e444152440302a3016d4d6573736167652028342f352902782a2f636f736d6f732e6665656772616e742e763162657461312e4d73674772616e74416c6c6f77616e63650301a301674772616e74657202782d636f736d6f73317170657277743977726e6b67356b396535677a66676a70707a70713061683268326c366d63350302a301674772616e74656502782d636f736d6f73317965636b787a377461707a33346b6a776e6a78766d787a7572657271756874726d78356a36670302a30169416c6c6f77616e63650278272f636f736d6f732e6665656772616e742e763162657461312e4261736963416c6c6f77616e63650302a3016b5370656e64206c696d6974026731303020666f6f0303a3016d4d6573736167652028352f352902781e2f636f736d6f732e617574687a2e763162657461312e4d73674772616e740301a301674772616e74657202782d636f736d6f73317170657277743977726e6b67356b396535677a66676a70707a70713061683268326c366d63350302a301674772616e74656502782d636f736d6f73317965636b787a377461707a33346b6a776e6a78766d787a7572657271756874726d78356a36670302a301654772616e74026c4772616e74206f626a6563740302a3016d417574686f72697a6174696f6e02782a2f636f736d6f732e617574687a2e763162657461312e47656e65726963417574686f72697a6174696f6e0303a301634d7367027821736f6d655f747970655f6f665f6d73672f4d7367536f6d65547970654f664d73670304a1026e456e64206f66204d657373616765a201644d656d6f026474657374a2016446656573026b3127303030207561746f6da30169476173206c696d697402673230302730303004f5a3017148617368206f66207261772062797465730278403763363034666532616434393563316164656566356565376331386265646138396162643134343062323661303137656465646535616431366237363462623004f5
+	*/
+
+}
+
+// mkTestLegacyContent creates a MsgExecLegacyContent for testing purposes.
+func mkTestLegacyContent(t *testing.T) *v1.MsgExecLegacyContent {
+	t.Helper()
+	TestProposal := v1beta1.NewTextProposal("Test", "description")
+	msgContent, err := v1.NewLegacyContent(TestProposal, authtypes.NewModuleAddress(types.ModuleName).String())
+	assert.NilError(t, err)
+
+	return msgContent
 }
