@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/core/event"
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/distribution/types"
 
@@ -104,6 +105,7 @@ func (k Keeper) CalculateDelegationRewards(ctx context.Context, val sdk.Validato
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	if startingInfo.Height == uint64(sdkCtx.BlockHeight()) {
 		// started this height, no rewards yet
 		return sdk.DecCoins{}, nil
@@ -242,7 +244,7 @@ func (k Keeper) withdrawDelegationRewards(ctx context.Context, val sdk.Validator
 	// of the decCoins due to operation order of the distribution mechanism.
 	rewards := rewardsRaw.Intersect(outstanding)
 	if !rewards.Equal(rewardsRaw) {
-		logger := k.Logger(ctx)
+		logger := k.environment.Logger
 		logger.Info(
 			"rounding error withdrawing rewards from validator",
 			"delegator", del.GetDelegatorAddr(),
@@ -313,15 +315,15 @@ func (k Keeper) withdrawDelegationRewards(ctx context.Context, val sdk.Validator
 		finalRewards = sdk.Coins{sdk.NewCoin(baseDenom, math.ZeroInt())}
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			types.EventTypeWithdrawRewards,
-			sdk.NewAttribute(sdk.AttributeKeyAmount, finalRewards.String()),
-			sdk.NewAttribute(types.AttributeKeyValidator, val.GetOperator()),
-			sdk.NewAttribute(types.AttributeKeyDelegator, del.GetDelegatorAddr()),
-		),
+	err = k.environment.EventService.EventManager(ctx).EmitKV(
+		types.EventTypeWithdrawRewards,
+		event.NewAttribute(sdk.AttributeKeyAmount, finalRewards.String()),
+		event.NewAttribute(types.AttributeKeyValidator, val.GetOperator()),
+		event.NewAttribute(types.AttributeKeyDelegator, del.GetDelegatorAddr()),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	return finalRewards, nil
 }

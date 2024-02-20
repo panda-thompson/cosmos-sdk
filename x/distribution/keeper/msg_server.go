@@ -162,7 +162,7 @@ func (k msgServer) CommunityPoolSpend(ctx context.Context, msg *types.MsgCommuni
 		return nil, err
 	}
 
-	logger := k.Logger(ctx)
+	logger := k.environment.Logger
 	logger.Info("transferred from the community pool to recipient", "amount", msg.Amount.String(), "recipient", msg.Recipient)
 
 	return &types.MsgCommunityPoolSpendResponse{}, nil
@@ -200,7 +200,7 @@ func (k msgServer) DepositValidatorRewardsPool(ctx context.Context, msg *types.M
 		return nil, err
 	}
 
-	logger := k.Logger(ctx)
+	logger := k.environment.Logger
 	logger.Info(
 		"transferred from rewards to validator rewards pool",
 		"depositor", msg.Depositor,
