@@ -16,7 +16,6 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	msgv1 "cosmossdk.io/api/cosmos/msg/v1"
-	"cosmossdk.io/client/v2/autocli/keyring"
 	"cosmossdk.io/client/v2/internal/flags"
 	"cosmossdk.io/client/v2/internal/util"
 	"cosmossdk.io/core/address"
@@ -49,9 +48,6 @@ type Builder struct {
 
 	messageFlagTypes map[protoreflect.FullName]Type
 	scalarFlagTypes  map[string]Type
-
-	// Keyring is the keyring to use for client/v2.
-	Keyring keyring.Keyring
 
 	// Address Codecs are the address codecs to use for client/v2.
 	AddressCodec          address.Codec
@@ -90,10 +86,6 @@ func (b *Builder) ValidateAndComplete() error {
 
 	if b.ConsensusAddressCodec == nil {
 		return errors.New("consensus address codec is required in flag builder")
-	}
-
-	if b.Keyring == nil {
-		b.Keyring = keyring.NoKeyring{}
 	}
 
 	if b.TypeResolver == nil {

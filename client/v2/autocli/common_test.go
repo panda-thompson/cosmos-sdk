@@ -55,9 +55,6 @@ func initFixture(t *testing.T) *fixture {
 	kr, err := sdkkeyring.New(sdk.KeyringServiceName(), sdkkeyring.BackendMemory, home, nil, encodingConfig.Codec)
 	assert.NilError(t, err)
 
-	akr, err := sdkkeyring.NewAutoCLIKeyring(kr)
-	assert.NilError(t, err)
-
 	interfaceRegistry := encodingConfig.Codec.InterfaceRegistry()
 	banktypes.RegisterInterfaces(interfaceRegistry)
 
@@ -82,7 +79,6 @@ func initFixture(t *testing.T) *fixture {
 			AddressCodec:          clientCtx.AddressCodec,
 			ValidatorAddressCodec: clientCtx.ValidatorAddressCodec,
 			ConsensusAddressCodec: clientCtx.ConsensusAddressCodec,
-			Keyring:               akr,
 		},
 		GetClientConn: func(*cobra.Command) (grpc.ClientConnInterface, error) {
 			return conn, nil
