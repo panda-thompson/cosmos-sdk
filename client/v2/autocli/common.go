@@ -1,12 +1,10 @@
 package autocli
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"sigs.k8s.io/yaml"
 
@@ -58,14 +56,11 @@ func (b *Builder) buildMethodCommandCommon(descriptor protoreflect.MethodDescrip
 		Version:      options.Version,
 	}
 
-	// the binder is only used for getting the number of args required
-	// it doesn't have access to the command context, so it isn't useful.
-	binderArgs, err := b.AddMessageFlags(context.Background(), &pflag.FlagSet{}, inputType, options)
+	cobraArgs, err := b.GetMinimumArgs(options)
 	if err != nil {
 		return nil, err
 	}
-
-	cmd.Args = binderArgs.CobraArgs
+	cmd.Args = cobraArgs
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		binder, err := b.AddMessageFlags(cmd.Context(), cmd.Flags(), inputType, options)

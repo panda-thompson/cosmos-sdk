@@ -107,9 +107,7 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 			continue
 		}
 
-		if methodCmd != nil {
-			cmd.AddCommand(methodCmd)
-		}
+		cmd.AddCommand(methodCmd)
 	}
 
 	return nil
@@ -176,9 +174,7 @@ func (b *Builder) BuildMsgMethodCommand(descriptor protoreflect.MethodDescriptor
 	}
 
 	// silence usage only for inner txs & queries commands
-	if cmd != nil {
-		cmd.SilenceUsage = true
-	}
+	cmd.SilenceUsage = true
 
 	// set gov proposal flags if command is a gov proposal
 	if options.GovProposal {

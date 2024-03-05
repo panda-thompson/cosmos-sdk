@@ -111,6 +111,30 @@ func (b *Builder) DefineScalarFlagType(scalarName string, flagType Type) {
 	b.scalarFlagTypes[scalarName] = flagType
 }
 
+// GetMinimumArgs returns the minimum number of positional arguments required for the command.
+func (b *Builder) GetMinimumArgs(commandOptions *autocliv1.RpcCommandOptions) (cobra.PositionalArgs, error) {
+	positionalArgsLen := len(commandOptions.PositionalArgs)
+	for i, arg := range commandOptions.PositionalArgs {
+		if arg.Varargs {
+			if i != positionalArgsLen-1 {
+				return nil, fmt.Errorf("varargs positional argument %s must be the last argument", arg.ProtoField)
+			}
+
+			return cobra.MinimumNArgs(positionalArgsLen - 1), nil
+		}
+
+		if arg.Optional {
+			if i != positionalArgsLen-1 {
+				return nil, fmt.Errorf("optional positional argument %s must be the last argument", arg.ProtoField)
+			}
+
+			return cobra.RangeArgs(positionalArgsLen-1, positionalArgsLen), nil
+		}
+	}
+
+	return cobra.ExactArgs(positionalArgsLen), nil
+}
+
 // AddMessageFlags adds flags for each field in the message to the flag set.
 func (b *Builder) AddMessageFlags(ctx context.Context, flagSet *pflag.FlagSet, messageType protoreflect.MessageType, commandOptions *autocliv1.RpcCommandOptions) (*MessageBinder, error) {
 	return b.addMessageFlags(ctx, flagSet, messageType, commandOptions, namingOptions{})
@@ -129,7 +153,7 @@ func (b *Builder) addMessageFlags(ctx context.Context, flagSet *pflag.FlagSet, m
 
 	isPositional := map[string]bool{}
 
-	lengthPositionalArgsOptions := len(commandOptions.PositionalArgs)
+	positionalArgsLen := len(commandOptions.PositionalArgs)
 	for i, arg := range commandOptions.PositionalArgs {
 		isPositional[arg.ProtoField] = true
 
@@ -141,17 +165,12 @@ func (b *Builder) addMessageFlags(ctx context.Context, flagSet *pflag.FlagSet, m
 			}
 		}
 
-		field := fields.ByName(protoreflect.Name(arg.ProtoField))
-		if field == nil {
-			return nil, fmt.Errorf("can't find field %s on %s", arg.ProtoField, messageType.Descriptor().FullName())
-		}
-
 		if arg.Optional && arg.Varargs {
 			return nil, fmt.Errorf("positional argument %s can't be both optional and varargs", arg.ProtoField)
 		}
 
 		if arg.Varargs {
-			if i != lengthPositionalArgsOptions-1 {
+			if i != positionalArgsLen-1 {
 				return nil, fmt.Errorf("varargs positional argument %s must be the last argument", arg.ProtoField)
 			}
 
@@ -159,11 +178,16 @@ func (b *Builder) addMessageFlags(ctx context.Context, flagSet *pflag.FlagSet, m
 		}
 
 		if arg.Optional {
-			if i != lengthPositionalArgsOptions-1 {
+			if i != positionalArgsLen-1 {
 				return nil, fmt.Errorf("optional positional argument %s must be the last argument", arg.ProtoField)
 			}
 
 			messageBinder.hasOptional = true
+		}
+
+		field := fields.ByName(protoreflect.Name(arg.ProtoField))
+		if field == nil {
+			return nil, fmt.Errorf("can't find field %s on %s", arg.ProtoField, messageType.Descriptor().FullName())
 		}
 
 		_, hasValue, err := b.addFieldFlag(
@@ -183,15 +207,16 @@ func (b *Builder) addMessageFlags(ctx context.Context, flagSet *pflag.FlagSet, m
 		})
 	}
 
-	if messageBinder.hasVarargs {
-		messageBinder.CobraArgs = cobra.MinimumNArgs(lengthPositionalArgsOptions - 1)
-		messageBinder.mandatoryArgUntil = lengthPositionalArgsOptions - 1
-	} else if messageBinder.hasOptional {
-		messageBinder.CobraArgs = cobra.RangeArgs(lengthPositionalArgsOptions-1, lengthPositionalArgsOptions)
-		messageBinder.mandatoryArgUntil = lengthPositionalArgsOptions - 1
-	} else {
-		messageBinder.CobraArgs = cobra.ExactArgs(lengthPositionalArgsOptions)
-		messageBinder.mandatoryArgUntil = lengthPositionalArgsOptions
+	switch {
+	case messageBinder.hasVarargs:
+		messageBinder.CobraArgs = cobra.MinimumNArgs(positionalArgsLen - 1)
+		messageBinder.mandatoryArgUntil = positionalArgsLen - 1
+	case messageBinder.hasOptional:
+		messageBinder.CobraArgs = cobra.RangeArgs(positionalArgsLen-1, positionalArgsLen)
+		messageBinder.mandatoryArgUntil = positionalArgsLen - 1
+	default:
+		messageBinder.CobraArgs = cobra.ExactArgs(positionalArgsLen)
+		messageBinder.mandatoryArgUntil = positionalArgsLen
 	}
 
 	// validate flag options
