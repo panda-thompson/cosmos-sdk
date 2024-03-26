@@ -3,6 +3,7 @@ package baseapp
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -422,6 +423,7 @@ func (app *BaseApp) PrepareProposal(req *abci.RequestPrepareProposal) (resp *abc
 				"height", req.Height,
 				"time", req.Time,
 				"panic", err,
+				"stacktrace", string(debug.Stack()),
 			)
 
 			resp = &abci.ResponsePrepareProposal{Txs: req.Txs}
