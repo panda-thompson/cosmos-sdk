@@ -1103,6 +1103,9 @@ func (app *BaseApp) PrepareProposalVerifyTx(tx sdk.Tx) ([]byte, error) {
 			)
 		}
 	}()
+	if app.txEncoder == nil {
+		return nil, errors.New("txEncoder is not defined")
+	}
 
 	bz, err := app.txEncoder(tx)
 	if err != nil {
