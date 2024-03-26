@@ -1093,6 +1093,18 @@ func createEvents(cdc codec.Codec, events sdk.Events, msg sdk.Msg, msgV2 protov2
 // returned if the transaction cannot be encoded. <bz, nil> will be returned if
 // the transaction is valid, otherwise <bz, err> will be returned.
 func (app *BaseApp) PrepareProposalVerifyTx(tx sdk.Tx) ([]byte, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			app.logger.Error(
+				"panic recovered in PrepareProposalVerifyTx",
+				"height", req.Height,
+				"time", req.Time,
+				"panic", err,
+				"stacktrace", string(debug.Stack()),
+			)
+		}
+	}()
+
 	bz, err := app.txEncoder(tx)
 	if err != nil {
 		return nil, err
