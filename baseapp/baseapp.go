@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"runtime/debug"
 	"sort"
 	"strconv"
 
@@ -1097,8 +1098,6 @@ func (app *BaseApp) PrepareProposalVerifyTx(tx sdk.Tx) ([]byte, error) {
 		if err := recover(); err != nil {
 			app.logger.Error(
 				"panic recovered in PrepareProposalVerifyTx",
-				"height", req.Height,
-				"time", req.Time,
 				"panic", err,
 				"stacktrace", string(debug.Stack()),
 			)
