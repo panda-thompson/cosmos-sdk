@@ -145,12 +145,14 @@ func (a *consensusAddressValue) Set(s string) error {
 func getKeyringFromCtx(ctx context.Context) keyring.Keyring {
 	if ctx != nil {
 		if clientCtx := ctx.Value(client.ClientContextKey); clientCtx != nil {
-			keyring, err := sdkkeyring.NewAutoCLIKeyring(clientCtx.(*client.Context).Keyring)
+			k, err := sdkkeyring.NewAutoCLIKeyring(clientCtx.(*client.Context).Keyring)
 			if err != nil {
 				panic(fmt.Errorf("failed to create keyring: %w", err))
 			}
 
-			return keyring
+			return k
+		} else if k := ctx.Value(keyring.KeyringContextKey); k != nil {
+			return k.(*keyring.KeyringImpl)
 		}
 	}
 

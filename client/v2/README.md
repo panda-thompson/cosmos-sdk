@@ -78,7 +78,7 @@ if err := rootCmd.Execute(); err != nil {
 `autocli` uses a keyring for key name resolving names and signing transactions.
 
 :::tip
-AutoCLI provides a better UX than normal cli as it allows to resolve key names directly from the keyring in all transactions and commands.
+AutoCLI provides a better UX than normal CLI as it allows to resolve key names directly from the keyring in all transactions and commands.
 
 ```sh
 <appd> q bank balances alice
@@ -231,7 +231,7 @@ The `encoding` flag lets you choose how the contents of the file should be encod
 
 * `simd off-chain sign-file alice myFile.json`
 
-  * ```json
+    * ```json
       {
         "@type":  "/offchain.MsgSignArbitraryData",
         "appDomain":  "simd",
@@ -242,7 +242,7 @@ The `encoding` flag lets you choose how the contents of the file should be encod
 
 * `simd off-chain sign-file alice myFile.json --encoding base64`
 
-  * ```json
+    * ```json
       {
         "@type":  "/offchain.MsgSignArbitraryData",
         "appDomain":  "simd",
@@ -253,7 +253,7 @@ The `encoding` flag lets you choose how the contents of the file should be encod
 
 * `simd off-chain sign-file alice myFile.json --encoding hex`
 
-  * ```json
+    * ```json
         {
           "@type":  "/offchain.MsgSignArbitraryData",
           "appDomain":  "simd",
