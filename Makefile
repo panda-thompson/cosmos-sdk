@@ -216,7 +216,7 @@ test-all: test-unit test-e2e test-integration test-ledger-mock test-race
 
 .PHONY: test-system
 test-system: build
-	mkdir ./systemtests/binaries/
+	mkdir -p ./systemtests/binaries/
 	cp $(BUILDDIR)/simd ./systemtests/binaries/
 	$(MAKE) -C systemtests test
 
