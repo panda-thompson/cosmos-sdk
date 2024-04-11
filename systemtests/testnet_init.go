@@ -96,13 +96,12 @@ func (s LegacyTestnetInitializer) Initialize() {
 		"--minimum-gas-prices=" + s.minGasPrice,
 	}
 	fmt.Printf("+++ %s %s\n", s.execBinary, strings.Join(args, " "))
-	cmd := exec.Command( //nolint:gosec
-		locateExecutable(s.execBinary),
-		args...,
-	)
-	cmd.Dir = s.workDir
-	out := mustV(cmd.CombinedOutput())
-	s.log(string(out))
+
+	out, err := runShellCmdX(s.execBinary, args...)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(out)
 
 	nodeAddresses := make([]string, s.initialNodesCount)
 	for i := 0; i < s.initialNodesCount; i++ {

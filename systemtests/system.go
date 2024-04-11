@@ -122,7 +122,7 @@ func (s *SystemUnderTest) SetupChain() {
 
 	// modify genesis with system test defaults
 	src := filepath.Join(WorkDir, s.nodePath(0), "config", "genesis.json")
-	genesisBz, err := os.ReadFile(src)
+	genesisBz, err := os.ReadFile(src) // #nosec G304
 	if err != nil {
 		panic(fmt.Sprintf("failed to load genesis: %s", err))
 	}
@@ -519,18 +519,31 @@ func (s *SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string)
 		for j, xargs := range cmds {
 			xargs = append(xargs, "--home", home)
 			s.Logf("Execute `%s %s`\n", s.execBinary, strings.Join(xargs, " "))
-			cmd := exec.Command( //nolint:gosec
-				locateExecutable(s.execBinary),
-				xargs...,
-			)
-			cmd.Dir = WorkDir
-			out, err := cmd.CombinedOutput()
-			require.NoError(t, err, "node %d: %s", i, string(out))
+			out := runShellCmd(t, s.execBinary, xargs...)
 			s.Logf("Result: %s\n", string(out))
-			result[i][j] = string(out)
+			result[i][j] = out
 		}
 	})
 	return result
+}
+
+func runShellCmd(t *testing.T, cmd string, args ...string) string {
+	out, err := runShellCmdX(cmd, args...)
+	require.NoError(t, err)
+	return out
+}
+
+func runShellCmdX(cmd string, args ...string) (string, error) {
+	c := exec.Command( //nolint:gosec
+		locateExecutable(cmd),
+		args...,
+	)
+	c.Dir = WorkDir
+	out, err := c.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("run `%s %s`: out: %s: %w", cmd, strings.Join(args, " "), string(out), err)
+	}
+	return string(out), nil
 }
 
 // startNodesAsync runs the given app cli command for all cluster nodes and returns without waiting
@@ -722,7 +735,7 @@ func locateExecutable(file string) string {
 		panic(fmt.Sprintf("unexpected error with file %q: %s", file, err.Error()))
 	}
 	if path == "" {
-		panic(fmt.Sprintf("%q not founc", file))
+		panic(fmt.Sprintf("%q not found", file))
 	}
 	return path
 }
@@ -898,7 +911,7 @@ func copyFile(src, dest string) (*os.File, error) {
 
 // copyFilesInDir copy files in src dir to dest path
 func copyFilesInDir(src, dest string) error {
-	err := os.MkdirAll(dest, 0o755)
+	err := os.MkdirAll(dest, 0o750)
 	if err != nil {
 		return fmt.Errorf("mkdirs: %s", err)
 	}
