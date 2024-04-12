@@ -44,7 +44,7 @@ import (
 // a command's Context.
 const ServerContextKey = sdk.ContextKey("server.context")
 
-// server context
+// Context server context
 type Context struct {
 	Viper  *viper.Viper
 	Config *cmtcfg.Config
@@ -323,8 +323,8 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 	return conf, nil
 }
 
-// add server commands
-func AddCommands[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T], addStartFlags types.ModuleInitFlags) {
+// AddCommands add server commands
+func AddCommands[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T], opts StartCmdOptions[T]) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
 		Aliases: []string{"cometbft", "tendermint"},
@@ -341,11 +341,7 @@ func AddCommands[T types.Application](rootCmd *cobra.Command, appCreator types.A
 		BootstrapStateCmd(appCreator),
 	)
 
-	startCmd := StartCmd(appCreator)
-	if addStartFlags != nil {
-		addStartFlags(startCmd)
-	}
-
+	startCmd := StartCmdWithOptions(appCreator, opts)
 	rootCmd.AddCommand(
 		startCmd,
 		cometCmd,
@@ -354,14 +350,19 @@ func AddCommands[T types.Application](rootCmd *cobra.Command, appCreator types.A
 	)
 }
 
+// AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
+// Deprecated: Use AddCommands directly instead.
+func AddCommandsWithStartCmdOptions[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T], opts StartCmdOptions[T]) {
+	AddCommands(rootCmd, appCreator, opts)
+}
+
 // AddTestnetCreatorCommand allows chains to create a testnet from the state existing in their node's data directory.
-func AddTestnetCreatorCommand[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T], addStartFlags types.ModuleInitFlags) {
+func AddTestnetCreatorCommand[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T]) {
 	testnetCreateCmd := InPlaceTestnetCreator(appCreator)
-	addStartFlags(testnetCreateCmd)
 	rootCmd.AddCommand(testnetCreateCmd)
 }
 
-// https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
+// ExternalIP https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
 // TODO there must be a better way to get external IP
 func ExternalIP() (string, error) {
 	ifaces, err := net.Interfaces()

@@ -85,7 +85,6 @@ func (b *MsgRouterBuilder) Build() (appmodulev2.Handler, error) {
 		// build the handler
 		handlers[msgType] = buildHandler(handler, preHandlers, globalPreHandler, postHandlers, globalPostHandler)
 	}
-	// TODO: add checks for when a pre handler/post handler is registered but there is no matching handler.
 
 	// return handler as function
 	return func(ctx context.Context, msg appmodulev2.Message) (appmodulev2.Message, error) {
@@ -98,7 +97,13 @@ func (b *MsgRouterBuilder) Build() (appmodulev2.Handler, error) {
 	}, nil
 }
 
-func buildHandler(handler appmodulev2.Handler, preHandlers []appmodulev2.PreMsgHandler, globalPreHandler appmodulev2.PreMsgHandler, postHandlers []appmodulev2.PostMsgHandler, globalPostHandler appmodulev2.PostMsgHandler) appmodulev2.Handler {
+func buildHandler(
+	handler appmodulev2.Handler,
+	preHandlers []appmodulev2.PreMsgHandler,
+	globalPreHandler appmodulev2.PreMsgHandler,
+	postHandlers []appmodulev2.PostMsgHandler,
+	globalPostHandler appmodulev2.PostMsgHandler,
+) appmodulev2.Handler {
 	return func(ctx context.Context, msg appmodulev2.Message) (msgResp appmodulev2.Message, err error) {
 		if len(preHandlers) != 0 {
 			for _, preHandler := range preHandlers {

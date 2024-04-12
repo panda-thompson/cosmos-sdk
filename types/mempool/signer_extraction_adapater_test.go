@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -22,6 +23,26 @@ func (n nonVerifiableTx) GetMsgs() []sdk.Msg {
 
 func (n nonVerifiableTx) GetMsgsV2() ([]proto.Message, error) {
 	panic("not implemented")
+}
+
+func (n nonVerifiableTx) Bytes() []byte {
+	return []byte{}
+}
+
+func (n nonVerifiableTx) Hash() [32]byte {
+	return [32]byte{}
+}
+
+func (n nonVerifiableTx) GetGasLimit() (uint64, error) {
+	return 0, nil
+}
+
+func (n nonVerifiableTx) GetMessages() ([]gogoproto.Message, error) {
+	return nil, nil
+}
+
+func (n nonVerifiableTx) GetSenders() ([][]byte, error) {
+	return nil, nil
 }
 
 func TestDefaultSignerExtractor(t *testing.T) {

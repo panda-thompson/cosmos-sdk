@@ -1199,7 +1199,7 @@ func checkNegativeHeight(height int64) error {
 	return nil
 }
 
-// createQueryContext creates a new sdk.Context for a query, taking as args
+// CreateQueryContext creates a new sdk.Context for a query, taking as args
 // the block height and whether the query needs a proof or not.
 func (app *BaseApp) CreateQueryContext(height int64, prove bool) (sdk.Context, error) {
 	if err := checkNegativeHeight(height); err != nil {
@@ -1242,7 +1242,7 @@ func (app *BaseApp) CreateQueryContext(height int64, prove bool) (sdk.Context, e
 	if err != nil {
 		return sdk.Context{},
 			errorsmod.Wrapf(
-				sdkerrors.ErrInvalidRequest,
+				sdkerrors.ErrNotFound,
 				"failed to load state at height %d; %s (latest height: %d)", height, err, lastBlockHeight,
 			)
 	}

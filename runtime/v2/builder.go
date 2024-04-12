@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"cosmossdk.io/core/appmodule"
+	appmodulev2 "cosmossdk.io/core/appmodule/v2"
+	"cosmossdk.io/core/store"
 	"cosmossdk.io/core/transaction"
 	"cosmossdk.io/server/v2/appmanager"
-	"cosmossdk.io/server/v2/core/store"
 	"cosmossdk.io/server/v2/stf"
 	"cosmossdk.io/server/v2/stf/branch"
+	rootstore "cosmossdk.io/store/v2/root"
 
 	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
 )
@@ -21,7 +22,8 @@ type branchFunc func(state store.ReaderMap) store.WriterMap
 // (as *AppBuilder) which can be used to create an app which is compatible with
 // the existing app.go initialization conventions.
 type AppBuilder struct {
-	app *App
+	app          *App
+	storeOptions *rootstore.FactoryOptions
 
 	// the following fields are used to overwrite the default
 	branch      branchFunc
@@ -30,12 +32,12 @@ type AppBuilder struct {
 
 // DefaultGenesis returns a default genesis from the registered AppModule's.
 func (a *AppBuilder) DefaultGenesis() map[string]json.RawMessage {
-	return a.app.moduleManager.DefaultGenesis(a.app.cdc)
+	return a.app.moduleManager.DefaultGenesis()
 }
 
 // RegisterModules registers the provided modules with the module manager.
 // This is the primary hook for integrating with modules which are not registered using the app config.
-func (a *AppBuilder) RegisterModules(modules ...appmodule.AppModule) error {
+func (a *AppBuilder) RegisterModules(modules ...appmodulev2.AppModule) error {
 	for _, appModule := range modules {
 		if mod, ok := appModule.(sdkmodule.HasName); ok {
 			name := mod.Name()
@@ -44,7 +46,7 @@ func (a *AppBuilder) RegisterModules(modules ...appmodule.AppModule) error {
 			}
 			a.app.moduleManager.modules[name] = appModule
 
-			if mod, ok := appModule.(sdkmodule.HasRegisterInterfaces); ok {
+			if mod, ok := appModule.(appmodulev2.HasRegisterInterfaces); ok {
 				mod.RegisterInterfaces(a.app.interfaceRegistry)
 			}
 
@@ -58,7 +60,7 @@ func (a *AppBuilder) RegisterModules(modules ...appmodule.AppModule) error {
 }
 
 // Build builds an *App instance.
-func (a *AppBuilder) Build(db Store, opts ...AppBuilderOption) (*App, error) {
+func (a *AppBuilder) Build(opts ...AppBuilderOption) (*App, error) {
 	for _, opt := range opts {
 		opt(a)
 	}
@@ -70,10 +72,8 @@ func (a *AppBuilder) Build(db Store, opts ...AppBuilderOption) (*App, error) {
 
 	// default tx validator
 	if a.txValidator == nil {
-		a.txValidator = a.app.moduleManager.TxValidation()
+		a.txValidator = a.app.moduleManager.TxValidators()
 	}
-
-	a.app.db = db
 
 	if err := a.app.moduleManager.RegisterServices(a.app); err != nil {
 		return nil, err
@@ -83,21 +83,37 @@ func (a *AppBuilder) Build(db Store, opts ...AppBuilderOption) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to build STF message handler: %w", err)
 	}
+	stfQueryHandler, err := a.app.queryRouterBuilder.Build()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query handler: %w", err)
+	}
 
 	endBlocker, valUpdate := a.app.moduleManager.EndBlock()
 
-	_ = stfMsgHandler
+	// TODO how to set?
+	// no-op postTxExec
+	postTxExec := func(ctx context.Context, tx transaction.Tx, success bool) error {
+		return nil
+	}
 
 	a.app.stf = stf.NewSTF[transaction.Tx](
-		nil, // stfMsgHandler, // re-enable in https://github.com/cosmos/cosmos-sdk/pull/19639
-		nil, // stfMsgHandler  // re-enable in https://github.com/cosmos/cosmos-sdk/pull/19639
+		stfMsgHandler,
+		stfQueryHandler,
 		a.app.moduleManager.PreBlocker(),
 		a.app.moduleManager.BeginBlock(),
 		endBlocker,
 		a.txValidator,
 		valUpdate,
+		postTxExec,
 		a.branch,
 	)
+
+	rs, err := rootstore.CreateRootStore(a.storeOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create root store: %w", err)
+	}
+	a.app.db = rs
+
 	appManagerBuilder := appmanager.Builder[transaction.Tx]{
 		STF:                a.app.stf,
 		DB:                 a.app.db,

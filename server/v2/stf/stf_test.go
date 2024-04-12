@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	appmanager "cosmossdk.io/core/app"
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	coregas "cosmossdk.io/core/gas"
+	"cosmossdk.io/core/store"
 	"cosmossdk.io/core/transaction"
-	"cosmossdk.io/server/v2/core/appmanager"
-	"cosmossdk.io/server/v2/core/store"
 	"cosmossdk.io/server/v2/stf/branch"
 	"cosmossdk.io/server/v2/stf/gas"
 	"cosmossdk.io/server/v2/stf/mock"
@@ -101,7 +101,7 @@ func TestSTF(t *testing.T) {
 		}, state)
 		require.NoError(t, err)
 		stateNotHas(t, newState, "gas_failure") // assert during out of gas no state changes leaked.
-		require.ErrorIs(t, result.TxResults[0].Error, coregas.ErrOutOfGas)
+		require.ErrorIs(t, result.TxResults[0].Error, coregas.ErrOutOfGas, result.TxResults[0].Error)
 	})
 
 	t.Run("fail exec tx", func(t *testing.T) {

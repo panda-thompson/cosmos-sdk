@@ -1404,7 +1404,7 @@ func TestPrecommiterCalledWithDeliverState(t *testing.T) {
 
 func TestABCI_Proposal_HappyPath(t *testing.T) {
 	anteKey := []byte("ante-key")
-	pool := mempool.NewSenderNonceMempool()
+	pool := mempool.NewSenderNonceMempool(mempool.SenderNonceMaxTxOpt(5000))
 	anteOpt := func(bapp *baseapp.BaseApp) {
 		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
 	}
@@ -1582,7 +1582,7 @@ func TestABCI_Proposals_WithVE(t *testing.T) {
 
 func TestABCI_PrepareProposal_ReachedMaxBytes(t *testing.T) {
 	anteKey := []byte("ante-key")
-	pool := mempool.NewSenderNonceMempool()
+	pool := mempool.NewSenderNonceMempool(mempool.SenderNonceMaxTxOpt(5000))
 	anteOpt := func(bapp *baseapp.BaseApp) {
 		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
 	}
@@ -1612,7 +1612,7 @@ func TestABCI_PrepareProposal_ReachedMaxBytes(t *testing.T) {
 
 func TestABCI_PrepareProposal_BadEncoding(t *testing.T) {
 	anteKey := []byte("ante-key")
-	pool := mempool.NewSenderNonceMempool()
+	pool := mempool.NewSenderNonceMempool(mempool.SenderNonceMaxTxOpt(5000))
 	anteOpt := func(bapp *baseapp.BaseApp) {
 		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
 	}
@@ -1639,7 +1639,7 @@ func TestABCI_PrepareProposal_BadEncoding(t *testing.T) {
 }
 
 func TestABCI_PrepareProposal_OverGasUnderBytes(t *testing.T) {
-	pool := mempool.NewSenderNonceMempool()
+	pool := mempool.NewSenderNonceMempool(mempool.SenderNonceMaxTxOpt(5000))
 	suite := NewBaseAppSuite(t, baseapp.SetMempool(pool))
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), NoopCounterServerImpl{})
 
@@ -1680,7 +1680,7 @@ func TestABCI_PrepareProposal_OverGasUnderBytes(t *testing.T) {
 }
 
 func TestABCI_PrepareProposal_MaxGas(t *testing.T) {
-	pool := mempool.NewSenderNonceMempool()
+	pool := mempool.NewSenderNonceMempool(mempool.SenderNonceMaxTxOpt(5000))
 	suite := NewBaseAppSuite(t, baseapp.SetMempool(pool))
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), NoopCounterServerImpl{})
 
@@ -1719,7 +1719,7 @@ func TestABCI_PrepareProposal_MaxGas(t *testing.T) {
 
 func TestABCI_PrepareProposal_Failures(t *testing.T) {
 	anteKey := []byte("ante-key")
-	pool := mempool.NewSenderNonceMempool()
+	pool := mempool.NewSenderNonceMempool(mempool.SenderNonceMaxTxOpt(5000))
 	anteOpt := func(bapp *baseapp.BaseApp) {
 		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
 	}
@@ -2041,11 +2041,9 @@ func TestBaseApp_PreBlocker(t *testing.T) {
 	require.NoError(t, err)
 
 	wasHookCalled := false
-	app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) error {
 		wasHookCalled = true
-		return &sdk.ResponsePreBlock{
-			ConsensusParamsChanged: true,
-		}, nil
+		return nil
 	})
 	app.Seal()
 
@@ -2058,8 +2056,8 @@ func TestBaseApp_PreBlocker(t *testing.T) {
 	_, err = app.InitChain(&abci.RequestInitChain{})
 	require.NoError(t, err)
 
-	app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-		return nil, errors.New("some error")
+	app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) error {
+		return errors.New("some error")
 	})
 	app.Seal()
 
@@ -2148,7 +2146,7 @@ func TestBaseApp_VoteExtensions(t *testing.T) {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 		})
 
-		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) error {
 			count := uint64(0)
 			pricesSum := uint64(0)
 			for _, v := range req.Txs {
@@ -2167,9 +2165,7 @@ func TestBaseApp_VoteExtensions(t *testing.T) {
 				ctx.KVStore(capKey1).Set([]byte("avgPrice"), buf)
 			}
 
-			return &sdk.ResponsePreBlock{
-				ConsensusParamsChanged: true,
-			}, nil
+			return nil
 		})
 	}
 

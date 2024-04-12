@@ -3,8 +3,9 @@ package mock
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"cosmossdk.io/core/transaction"
@@ -14,7 +15,7 @@ var _ transaction.Tx = Tx{}
 
 type Tx struct {
 	Sender   []byte
-	Msg      proto.Message
+	Msg      transaction.Type
 	GasLimit uint64
 }
 
@@ -22,16 +23,22 @@ func (t Tx) Hash() [32]byte {
 	return sha256.Sum256(t.Bytes())
 }
 
-func (t Tx) GetMessages() []transaction.Type {
-	return []transaction.Type{t.Msg}
+func (t Tx) GetMessages() ([]transaction.Type, error) {
+	if t.Msg == nil {
+		return nil, errors.New("messages not available or are nil")
+	}
+	return []transaction.Type{t.Msg}, nil
 }
 
-func (t Tx) GetSenders() []transaction.Identity {
-	return []transaction.Identity{t.Sender}
+func (t Tx) GetSenders() ([]transaction.Identity, error) {
+	if t.Sender == nil {
+		return nil, errors.New("senders not available or are nil")
+	}
+	return []transaction.Identity{t.Sender}, nil
 }
 
-func (t Tx) GetGasLimit() uint64 {
-	return t.GasLimit
+func (t Tx) GetGasLimit() (uint64, error) {
+	return t.GasLimit, nil
 }
 
 type encodedTx struct {
@@ -41,7 +48,8 @@ type encodedTx struct {
 }
 
 func (t Tx) Bytes() []byte {
-	msg, err := anypb.New(t.Msg)
+	v2Msg := protoadapt.MessageV2Of(t.Msg)
+	msg, err := anypb.New(v2Msg)
 	if err != nil {
 		panic(err)
 	}
@@ -66,14 +74,14 @@ func (t *Tx) Decode(b []byte) {
 	if err != nil {
 		panic(err)
 	}
-	t.Msg = msg
+	t.Msg = protoadapt.MessageV1Of(msg)
 	t.Sender = rawTx.Sender
 	t.GasLimit = rawTx.GasLimit
 }
 
-type txCodec struct{}
+type TxCodec struct{}
 
-func (txCodec) Decode(bytes []byte) (Tx, error) {
+func (TxCodec) Decode(bytes []byte) (Tx, error) {
 	t := new(Tx)
 	t.Decode(bytes)
 	return *t, nil

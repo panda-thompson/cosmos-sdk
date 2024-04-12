@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
 	"cosmossdk.io/core/appmodule"
-	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	"cosmossdk.io/core/registry"
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/x/staking/client/cli"
@@ -25,23 +23,23 @@ import (
 )
 
 const (
-	consensusVersion uint64 = 5
+	consensusVersion uint64 = 6
 )
 
 var (
-	_ module.AppModuleSimulation      = AppModule{}
-	_ module.HasName                  = AppModule{}
-	_ module.HasAminoCodec            = AppModule{}
-	_ module.HasGRPCGateway           = AppModule{}
-	_ appmodule.HasRegisterInterfaces = AppModule{}
-	_ module.HasInvariants            = AppModule{}
-	_ module.HasABCIGenesis           = AppModule{}
-	_ module.HasABCIEndBlock          = AppModule{}
+	_ module.AppModuleSimulation = AppModule{}
+	_ module.HasName             = AppModule{}
+	_ module.HasAminoCodec       = AppModule{}
+	_ module.HasGRPCGateway      = AppModule{}
+	_ module.HasInvariants       = AppModule{}
+	_ module.HasABCIGenesis      = AppModule{}
+	_ module.HasABCIEndBlock     = AppModule{}
 
-	_ appmodulev2.AppModule       = AppModule{}
-	_ appmodulev2.HasBeginBlocker = AppModule{}
-	_ appmodule.HasServices       = AppModule{}
-	_ appmodulev2.HasMigrations   = AppModule{}
+	_ appmodule.AppModule             = AppModule{}
+	_ appmodule.HasBeginBlocker       = AppModule{}
+	_ appmodule.HasServices           = AppModule{}
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 
 	_ depinject.OnePerModuleType = AppModule{}
 )
@@ -83,8 +81,8 @@ func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
 // RegisterInterfaces registers the module's interface types
-func (AppModule) RegisterInterfaces(registry registry.LegacyRegistry) {
-	types.RegisterInterfaces(registry)
+func (AppModule) RegisterInterfaces(registrar registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registrar)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the staking module.
@@ -127,19 +125,22 @@ func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	if err := mr.Register(types.ModuleName, 4, m.Migrate4to5); err != nil {
 		return fmt.Errorf("failed to migrate x/%s from version 4 to 5: %v", types.ModuleName, err)
 	}
+	if err := mr.Register(types.ModuleName, 5, m.Migrate5to6); err != nil {
+		return fmt.Errorf("failed to migrate x/%s from version 5 to 6: %v", types.ModuleName, err)
+	}
 
 	return nil
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the staking module.
-func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+func (am AppModule) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the staking module.
-func (AppModule) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
 	var data types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
+	if err := am.cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
@@ -147,18 +148,23 @@ func (AppModule) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingCo
 }
 
 // InitGenesis performs genesis initialization for the staking module.
-func (am AppModule) InitGenesis(ctx context.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx context.Context, data json.RawMessage) ([]appmodule.ValidatorUpdate, error) {
 	var genesisState types.GenesisState
-
-	cdc.MustUnmarshalJSON(data, &genesisState)
-
+	am.cdc.MustUnmarshalJSON(data, &genesisState)
 	return am.keeper.InitGenesis(ctx, &genesisState)
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the staking
-// module.
-func (am AppModule) ExportGenesis(ctx context.Context, cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
+// ExportGenesis returns the exported genesis state as raw bytes for the staking module.
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
+	genesis, err := am.keeper.ExportGenesis(ctx)
+	if err != nil {
+		return nil, err
+	}
+	marshalJSON, err := am.cdc.MarshalJSON(genesis)
+	if err != nil {
+		return nil, err
+	}
+	return marshalJSON, nil
 }
 
 // ConsensusVersion implements HasConsensusVersion
@@ -170,30 +176,6 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 }
 
 // EndBlock returns the end blocker for the staking module.
-func (am AppModule) EndBlock(ctx context.Context) ([]appmodulev2.ValidatorUpdate, error) {
-	cometValidatorUpdates, err := am.keeper.EndBlocker(ctx) // TODO: refactor to return appmodule.ValidatorUpdate higher up the stack
-	if err != nil {
-		return nil, err
-	}
-
-	validatorUpdates := make([]appmodulev2.ValidatorUpdate, len(cometValidatorUpdates))
-	for i, v := range cometValidatorUpdates {
-		if ed25519 := v.PubKey.GetEd25519(); len(ed25519) > 0 {
-			validatorUpdates[i] = appmodulev2.ValidatorUpdate{
-				PubKey:     ed25519,
-				PubKeyType: "ed25519",
-				Power:      v.Power,
-			}
-		} else if secp256k1 := v.PubKey.GetSecp256K1(); len(secp256k1) > 0 {
-			validatorUpdates[i] = appmodulev2.ValidatorUpdate{
-				PubKey:     secp256k1,
-				PubKeyType: "secp256k1",
-				Power:      v.Power,
-			}
-		} else {
-			return nil, fmt.Errorf("unexpected validator pubkey type: %T", v.PubKey)
-		}
-	}
-
-	return validatorUpdates, nil
+func (am AppModule) EndBlock(ctx context.Context) ([]appmodule.ValidatorUpdate, error) {
+	return am.keeper.EndBlocker(ctx)
 }

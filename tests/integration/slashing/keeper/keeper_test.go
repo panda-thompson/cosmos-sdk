@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/assert"
 
@@ -14,6 +15,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/auth"
 	authkeeper "cosmossdk.io/x/auth/keeper"
+	authtestutil "cosmossdk.io/x/auth/testutil"
 	authtypes "cosmossdk.io/x/auth/types"
 	"cosmossdk.io/x/bank"
 	bankkeeper "cosmossdk.io/x/bank/keeper"
@@ -73,6 +75,10 @@ func initFixture(tb testing.TB) *fixture {
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 	}
 
+	// gomock initializations
+	ctrl := gomock.NewController(&testing.T{})
+	acctsModKeeper := authtestutil.NewMockAccountsModKeeper(ctrl)
+
 	accountKeeper := authkeeper.NewAccountKeeper(
 		runtime.NewEnvironment(runtime.NewKVStoreService(keys[authtypes.StoreKey]), log.NewNopLogger()),
 		cdc,
@@ -81,6 +87,7 @@ func initFixture(tb testing.TB) *fixture {
 		addresscodec.NewBech32Codec(sdk.Bech32MainPrefix),
 		sdk.Bech32MainPrefix,
 		authority.String(),
+		acctsModKeeper,
 	)
 
 	blockedAddresses := map[string]bool{
@@ -195,7 +202,11 @@ func TestUnJailNotBonded(t *testing.T) {
 
 	// unbond below minimum self-delegation
 	assert.Equal(t, p.BondDenom, tstaking.Denom)
-	tstaking.Undelegate(sdk.AccAddress(addr), addr, f.stakingKeeper.TokensFromConsensusPower(f.ctx, 1), true)
+	accAddr, err := f.accountKeeper.AddressCodec().BytesToString(addr)
+	assert.NilError(t, err)
+	valAddr, err := f.stakingKeeper.ValidatorAddressCodec().BytesToString(addr)
+	require.NoError(t, err)
+	tstaking.Undelegate(accAddr, valAddr, f.stakingKeeper.TokensFromConsensusPower(f.ctx, 1), true)
 
 	_, err = f.stakingKeeper.EndBlocker(f.ctx)
 	assert.NilError(t, err)
@@ -220,8 +231,12 @@ func TestUnJailNotBonded(t *testing.T) {
 	assert.NilError(t, err)
 	newHeight = f.ctx.BlockHeight() + 1
 	f.ctx = f.ctx.WithBlockHeight(newHeight).WithHeaderInfo(coreheader.Info{Height: newHeight})
-	// bond to meet minimum self-delegation
-	tstaking.DelegateWithPower(sdk.AccAddress(addr), addr, 1)
+	// bond to meet minimum self-delegationa
+	accAddr, err = f.accountKeeper.AddressCodec().BytesToString(addr)
+	assert.NilError(t, err)
+	valAddr, err = f.stakingKeeper.ValidatorAddressCodec().BytesToString(addr)
+	assert.NilError(t, err)
+	tstaking.DelegateWithPower(accAddr, valAddr, 1)
 
 	_, err = f.stakingKeeper.EndBlocker(f.ctx)
 	assert.NilError(t, err)
@@ -430,7 +445,11 @@ func TestValidatorDippingInAndOut(t *testing.T) {
 	f.ctx = f.ctx.WithBlockHeight(height).WithHeaderInfo(coreheader.Info{Height: height})
 
 	// validator added back in
-	tstaking.DelegateWithPower(sdk.AccAddress(pks[2].Address()), valAddr, 50)
+	accAddr, err := f.accountKeeper.AddressCodec().BytesToString(sdk.AccAddress(pks[2].Address()))
+	assert.NilError(t, err)
+	vAddr, err := f.stakingKeeper.ValidatorAddressCodec().BytesToString(valAddr)
+	assert.NilError(t, err)
+	tstaking.DelegateWithPower(accAddr, vAddr, 50)
 
 	validatorUpdates, err = f.stakingKeeper.EndBlocker(f.ctx)
 	require.NoError(t, err)

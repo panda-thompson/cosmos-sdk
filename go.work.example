@@ -1,6 +1,6 @@
 go 1.22
 
-toolchain go1.21
+toolchain go1.22
 
 use (
 	.
@@ -38,9 +38,10 @@ use (
 	./x/staking
 	./x/tx
 	./x/upgrade
+	./x/epochs
+	./x/accounts/defaults/lockup
 	./server/v2/appmanager
 	./server/v2/cometbft
-	./server/v2/core
 	./server/v2/stf
 	./server/v2
 	./runtime/v2

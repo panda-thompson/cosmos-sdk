@@ -19,6 +19,14 @@ type AppModule interface {
 	IsOnePerModuleType()
 }
 
+// HasPreBlocker is the extension interface that modules should implement to run
+// custom logic before BeginBlock.
+type HasPreBlocker interface {
+	AppModule
+	// PreBlock is method that will be run before BeginBlock.
+	PreBlock(context.Context) error
+}
+
 // HasBeginBlocker is the extension interface that modules should implement to run
 // custom logic before transaction processing in a block.
 type HasBeginBlocker interface {
@@ -39,10 +47,10 @@ type HasEndBlocker interface {
 	EndBlock(context.Context) error
 }
 
-// HasTxValidation is the extension interface that modules should implement to run
+// HasTxValidator is the extension interface that modules should implement to run
 // custom logic for validating transactions.
 // It was previously known as AnteHandler/Decorator.
-type HasTxValidation[T transaction.Tx] interface {
+type HasTxValidator[T transaction.Tx] interface {
 	AppModule
 
 	// TxValidator is a method that will be run on each transaction.
@@ -94,5 +102,5 @@ type ValidatorUpdate struct {
 
 // HasRegisterInterfaces is the interface for modules to register their msg types.
 type HasRegisterInterfaces interface {
-	RegisterInterfaces(registry.LegacyRegistry)
+	RegisterInterfaces(registry.InterfaceRegistrar)
 }

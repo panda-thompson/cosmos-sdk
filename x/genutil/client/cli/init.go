@@ -20,7 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
@@ -66,9 +65,13 @@ func displayInfo(info printInfo) error {
 	return err
 }
 
+type hasDefaultGenesis interface {
+	DefaultGenesis() map[string]json.RawMessage
+}
+
 // InitCmd returns a command that initializes all files needed for Tendermint
 // and the respective application.
-func InitCmd(mm *module.Manager) *cobra.Command {
+func InitCmd(mm hasDefaultGenesis) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [moniker]",
 		Short: "Initialize private validator, p2p, genesis, and application configuration files",
@@ -76,7 +79,6 @@ func InitCmd(mm *module.Manager) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
-			cdc := clientCtx.Codec
 
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			config := serverCtx.Config
@@ -133,7 +135,7 @@ func InitCmd(mm *module.Manager) *cobra.Command {
 			if defaultDenom != "" {
 				sdk.DefaultBondDenom = defaultDenom
 			}
-			appGenState := mm.DefaultGenesis(cdc)
+			appGenState := mm.DefaultGenesis()
 
 			appState, err := json.MarshalIndent(appGenState, "", " ")
 			if err != nil {

@@ -26,8 +26,8 @@ type Keeper interface {
 	SendKeeper
 	WithMintCoinsRestriction(types.MintingRestrictionFn) BaseKeeper
 
-	InitGenesis(context.Context, *types.GenesisState)
-	ExportGenesis(context.Context) *types.GenesisState
+	InitGenesis(context.Context, *types.GenesisState) error
+	ExportGenesis(context.Context) (*types.GenesisState, error)
 
 	GetSupply(ctx context.Context, denom string) sdk.Coin
 	HasSupply(ctx context.Context, denom string) bool
@@ -439,6 +439,10 @@ func (k BaseKeeper) setSupply(ctx context.Context, coin sdk.Coin) {
 func (k BaseKeeper) trackDelegation(ctx context.Context, addr sdk.AccAddress, balance, amt sdk.Coins) error {
 	acc := k.ak.GetAccount(ctx, addr)
 	if acc == nil {
+		// check if it's an x/accounts smart account
+		if k.ak.HasAccount(ctx, addr) {
+			return nil
+		}
 		return errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "account %s does not exist", addr)
 	}
 
@@ -456,6 +460,10 @@ func (k BaseKeeper) trackDelegation(ctx context.Context, addr sdk.AccAddress, ba
 func (k BaseKeeper) trackUndelegation(ctx context.Context, addr sdk.AccAddress, amt sdk.Coins) error {
 	acc := k.ak.GetAccount(ctx, addr)
 	if acc == nil {
+		// check if it's an x/accounts smart account
+		if k.ak.HasAccount(ctx, addr) {
+			return nil
+		}
 		return errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "account %s does not exist", addr)
 	}
 

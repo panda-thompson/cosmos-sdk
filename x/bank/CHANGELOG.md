@@ -25,10 +25,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
-### Consens Breaking Changes
-
-* [#19188](https://github.com/cosmos/cosmos-sdk/pull/19188) Remove creation of `BaseAccount` when sending a message to an account that does not exist
-
 ### Features
 
 * [#17569](https://github.com/cosmos/cosmos-sdk/pull/17569) Introduce a new message type, `MsgBurn`, to burn coins.
@@ -39,7 +35,16 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### API Breaking Changes
 
+* [#19954](https://github.com/cosmos/cosmos-sdk/pull/19954) Removal of the Address.String() method and related changes:
+    * Changed `NewInput`, `NewOutput`, `NewQueryBalanceRequest`, `NewQueryAllBalancesRequest`, `NewQuerySpendableBalancesRequest` to accept a string instead of an `AccAddress`.
+    * Added an address codec as an argument to `NewSendAuthorization`.
+    * Added an address codec as an argument to `SanitizeGenesisBalances` which also returns an error.
+    * (simulation) `RandomGenesisBalances` also returns an error.
 * [#17569](https://github.com/cosmos/cosmos-sdk/pull/17569) `BurnCoins` takes an address instead of a module name
 * [#19477](https://github.com/cosmos/cosmos-sdk/pull/19477) `appmodule.Environment` is passed to bank `NewKeeper`
+* [#19627](https://github.com/cosmos/cosmos-sdk/pull/19627) The genesis api has been updated to match `appmodule.HasGenesis`.
+* [#19740](https://github.com/cosmos/cosmos-sdk/pull/19740) Verify `InitGenesis` and `ExportGenesis` module code and keeper code do not panic.
 
-### Bug Fixes
+### Consensus Breaking Changes
+
+* [#19188](https://github.com/cosmos/cosmos-sdk/pull/19188) Remove creation of `BaseAccount` when sending a message to an account that does not exist

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	protov2 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 	errorsmod "cosmossdk.io/errors"
@@ -16,7 +16,7 @@ import (
 	txsigning "github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
-// An sdk.Tx which is its own sdk.Msg.
+// KVStoreTx is an sdk.Tx which is its own sdk.Msg.
 type KVStoreTx struct {
 	key     []byte
 	value   []byte
@@ -72,6 +72,7 @@ func (msg *KVStoreTx) Equals(key cryptotypes.PubKey) bool {
 }
 
 // dummy implementation of proto.Message
+
 func (msg *KVStoreTx) Reset()         {}
 func (msg *KVStoreTx) String() string { return "TODO" }
 func (msg *KVStoreTx) ProtoMessage()  {}
@@ -94,6 +95,22 @@ func NewTx(key, value string, accAddress sdk.AccAddress) *KVStoreTx {
 	}
 }
 
+func (msg *KVStoreTx) Hash() [32]byte {
+	return [32]byte{}
+}
+
+func (msg *KVStoreTx) GetGasLimit() (uint64, error) {
+	return 0, nil
+}
+
+func (msg *KVStoreTx) GetMessages() ([]proto.Message, error) {
+	return nil, nil
+}
+
+func (msg *KVStoreTx) GetSenders() ([][]byte, error) {
+	return nil, nil
+}
+
 func (msg *KVStoreTx) Type() string {
 	return "kvstore_tx"
 }
@@ -102,15 +119,15 @@ func (msg *KVStoreTx) GetMsgs() []sdk.Msg {
 	return []sdk.Msg{msg}
 }
 
-func (msg *KVStoreTx) GetMsgsV2() ([]protov2.Message, error) {
-	return []protov2.Message{&bankv1beta1.MsgSend{FromAddress: msg.address.String()}}, nil // this is a hack for tests
+func (msg *KVStoreTx) GetMsgsV2() ([]proto.Message, error) {
+	return []proto.Message{&bankv1beta1.MsgSend{FromAddress: msg.address.String()}}, nil // this is a hack for tests
 }
 
 func (msg *KVStoreTx) GetSignBytes() []byte {
 	return msg.bytes
 }
 
-// Should the app be calling this? Or only handlers?
+// ValidateBasic should the app be calling this? or only handlers?
 func (msg *KVStoreTx) ValidateBasic() error {
 	return nil
 }

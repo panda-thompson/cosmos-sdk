@@ -9,6 +9,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/golang/mock/gomock"
 	"gotest.tools/v3/assert"
 
 	"cosmossdk.io/collections"
@@ -20,6 +21,7 @@ import (
 	"cosmossdk.io/x/auth"
 	authkeeper "cosmossdk.io/x/auth/keeper"
 	authsims "cosmossdk.io/x/auth/simulation"
+	authtestutil "cosmossdk.io/x/auth/testutil"
 	authtypes "cosmossdk.io/x/auth/types"
 	"cosmossdk.io/x/bank"
 	bankkeeper "cosmossdk.io/x/bank/keeper"
@@ -98,6 +100,10 @@ func initFixture(tb testing.TB) *fixture {
 
 	authority := authtypes.NewModuleAddress("gov")
 
+	// gomock initializations
+	ctrl := gomock.NewController(tb)
+	acctsModKeeper := authtestutil.NewMockAccountsModKeeper(ctrl)
+
 	maccPerms := map[string][]string{
 		pooltypes.ModuleName:           {},
 		minttypes.ModuleName:           {authtypes.Minter},
@@ -113,6 +119,7 @@ func initFixture(tb testing.TB) *fixture {
 		addresscodec.NewBech32Codec(sdk.Bech32MainPrefix),
 		sdk.Bech32MainPrefix,
 		authority.String(),
+		acctsModKeeper,
 	)
 
 	blockedAddresses := map[string]bool{
@@ -141,7 +148,7 @@ func initFixture(tb testing.TB) *fixture {
 	bankModule := bank.NewAppModule(cdc, bankKeeper, accountKeeper)
 	stakingModule := staking.NewAppModule(cdc, stakingKeeper, accountKeeper, bankKeeper)
 	slashingModule := slashing.NewAppModule(cdc, slashingKeeper, accountKeeper, bankKeeper, stakingKeeper, cdc.InterfaceRegistry())
-	evidenceModule := evidence.NewAppModule(*evidenceKeeper)
+	evidenceModule := evidence.NewAppModule(cdc, *evidenceKeeper)
 
 	integrationApp := integration.NewIntegrationApp(newCtx, logger, keys, cdc,
 		encodingCfg.InterfaceRegistry.SigningContext().AddressCodec(),
@@ -261,7 +268,11 @@ func TestHandleDoubleSign(t *testing.T) {
 	totalBond := validator.TokensFromShares(del.GetShares()).TruncateInt()
 	tstaking.Ctx = ctx
 	tstaking.Denom = stakingParams.BondDenom
-	tstaking.Undelegate(sdk.AccAddress(operatorAddr), operatorAddr, totalBond, true)
+	accAddr, err := f.accountKeeper.AddressCodec().BytesToString(operatorAddr)
+	assert.NilError(t, err)
+	opAddr, err := f.stakingKeeper.ValidatorAddressCodec().BytesToString(operatorAddr)
+	assert.NilError(t, err)
+	tstaking.Undelegate(accAddr, opAddr, totalBond, true)
 
 	// query evidence from store
 	iter, err := f.evidenceKeeper.Evidences.Iterate(ctx, nil)
@@ -424,7 +435,11 @@ func TestHandleDoubleSignAfterRotation(t *testing.T) {
 	totalBond := validator.TokensFromShares(del.GetShares()).TruncateInt()
 	tstaking.Ctx = ctx
 	tstaking.Denom = stakingParams.BondDenom
-	tstaking.Undelegate(sdk.AccAddress(operatorAddr), operatorAddr, totalBond, true)
+	accAddr, err := f.accountKeeper.AddressCodec().BytesToString(operatorAddr)
+	assert.NilError(t, err)
+	opAddr, err := f.stakingKeeper.ValidatorAddressCodec().BytesToString(operatorAddr)
+	assert.NilError(t, err)
+	tstaking.Undelegate(accAddr, opAddr, totalBond, true)
 
 	// query evidence from store
 	var evidences []exported.Evidence

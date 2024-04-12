@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"google.golang.org/protobuf/proto"
+	"cosmossdk.io/core/header"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 
-	corecomet "cosmossdk.io/core/comet"
+	consensusv1 "cosmossdk.io/api/cosmos/consensus/v1"
+	coreappmgr "cosmossdk.io/core/app"
 	"cosmossdk.io/core/event"
+	"cosmossdk.io/core/store"
 	"cosmossdk.io/core/transaction"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
@@ -19,10 +21,9 @@ import (
 	"cosmossdk.io/server/v2/cometbft/mempool"
 	"cosmossdk.io/server/v2/cometbft/types"
 	cometerrors "cosmossdk.io/server/v2/cometbft/types/errors"
-	coreappmgr "cosmossdk.io/server/v2/core/appmanager"
-	"cosmossdk.io/server/v2/core/store"
 	"cosmossdk.io/server/v2/streaming"
 	"cosmossdk.io/store/v2/snapshots"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 const (
@@ -52,6 +53,8 @@ type Consensus[T transaction.Tx] struct {
 	processProposalHandler handlers.ProcessHandler[T]
 	verifyVoteExt          handlers.VerifyVoteExtensionhandler
 	extendVote             handlers.ExtendVoteHandler
+
+	chainID string
 }
 
 func NewConsensus[T transaction.Tx](
@@ -59,12 +62,16 @@ func NewConsensus[T transaction.Tx](
 	mp mempool.Mempool[T],
 	store types.Store,
 	cfg Config,
+	txCodec transaction.Codec[T],
+	logger log.Logger,
 ) *Consensus[T] {
 	return &Consensus[T]{
 		mempool: mp,
 		store:   store,
 		app:     app,
 		cfg:     cfg,
+		txCodec: txCodec,
+		logger:  logger,
 	}
 }
 
@@ -118,7 +125,6 @@ type BlockData struct {
 // CheckTx implements types.Application.
 // It is called by cometbft to verify transaction validity
 func (c *Consensus[T]) CheckTx(ctx context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	// TODO: evaluate here if to return error, or CheckTxResponse.error.
 	decodedTx, err := c.txCodec.Decode(req.Tx)
 	if err != nil {
 		return nil, err
@@ -130,10 +136,14 @@ func (c *Consensus[T]) CheckTx(ctx context.Context, req *abci.RequestCheckTx) (*
 	}
 
 	cometResp := &abci.ResponseCheckTx{
-		// Code:      resp.Code, //TODO: extract error code from resp.Error
+		Code:      resp.Code,
 		GasWanted: uint64ToInt64(resp.GasWanted),
 		GasUsed:   uint64ToInt64(resp.GasUsed),
 		Events:    intoABCIEvents(resp.Events, c.cfg.IndexEvents),
+		Info:      resp.Info,
+		Data:      resp.Data,
+		Log:       resp.Log,
+		Codespace: resp.Codespace,
 	}
 	if resp.Error != nil {
 		cometResp.Code = 1
@@ -149,10 +159,10 @@ func (c *Consensus[T]) Info(ctx context.Context, _ *abci.RequestInfo) (*abci.Res
 		return nil, err
 	}
 
-	cp, err := c.GetConsensusParams(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// cp, err := c.GetConsensusParams(ctx)
+	// if err != nil {
+	//	return nil, err
+	// }
 
 	cid, err := c.store.LastCommitID()
 	if err != nil {
@@ -160,9 +170,10 @@ func (c *Consensus[T]) Info(ctx context.Context, _ *abci.RequestInfo) (*abci.Res
 	}
 
 	return &abci.ResponseInfo{
-		Data:             c.cfg.Name,
-		Version:          c.cfg.Version,
-		AppVersion:       cp.GetVersion().App,
+		Data:    c.cfg.Name,
+		Version: c.cfg.Version,
+		// AppVersion:       cp.GetVersion().App,
+		AppVersion:       0, // TODO fetch from store?
 		LastBlockHeight:  int64(version),
 		LastBlockAppHash: cid.Hash,
 	}, nil
@@ -171,16 +182,22 @@ func (c *Consensus[T]) Info(ctx context.Context, _ *abci.RequestInfo) (*abci.Res
 // Query implements types.Application.
 // It is called by cometbft to query application state.
 func (c *Consensus[T]) Query(ctx context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
-	appreq, err := parseQueryRequest(req)
+	// follow the query path from here
+	decodedMsg, err := c.txCodec.Decode(req.Data)
+	protoMsg, ok := any(decodedMsg).(transaction.Type)
+	if !ok {
+		return nil, fmt.Errorf("decoded type T %T must implement core/transaction.Type", decodedMsg)
+	}
+
 	// if no error is returned then we can handle the query with the appmanager
 	// otherwise it is a KV store query
 	if err == nil {
-		res, err := c.app.Query(ctx, uint64(req.Height), appreq)
+		res, err := c.app.Query(ctx, uint64(req.Height), protoMsg)
 		if err != nil {
 			return nil, err
 		}
 
-		return queryResponse(req, res)
+		return queryResponse(res)
 	}
 
 	// this error most probably means that we can't handle it with a proto message, so
@@ -217,7 +234,39 @@ func (c *Consensus[T]) Query(ctx context.Context, req *abci.RequestQuery) (*abci
 func (c *Consensus[T]) InitChain(ctx context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	c.logger.Info("InitChain", "initialHeight", req.InitialHeight, "chainID", req.ChainId)
 
-	// TODO: won't work for now
+	c.chainID = req.ChainId
+
+	// On a new chain, we consider the init chain block height as 0, even though
+	// req.InitialHeight is 1 by default.
+	// TODO
+
+	var consMessages []transaction.Type
+	if req.ConsensusParams != nil {
+		consMessages = append(consMessages, &consensustypes.MsgUpdateParams{
+			Authority: c.cfg.ConsensusAuthority,
+			Block:     req.ConsensusParams.Block,
+			Evidence:  req.ConsensusParams.Evidence,
+			Validator: req.ConsensusParams.Validator,
+			Abci:      req.ConsensusParams.Abci,
+		})
+	}
+
+	genesisHeaderInfo := header.Info{
+		Height:  req.InitialHeight,
+		Hash:    nil,
+		Time:    req.Time,
+		ChainID: req.ChainId,
+		AppHash: nil,
+	}
+
+	genesisState, err := c.app.InitGenesis(ctx, genesisHeaderInfo, consMessages, req.AppStateBytes)
+	if err != nil {
+		return nil, fmt.Errorf("genesis state init failure: %w", err)
+	}
+
+	println(genesisState) // TODO: this needs to be committed to store as height 0.
+
+	// TODO: populate
 	return &abci.ResponseInitChain{
 		ConsensusParams: req.ConsensusParams,
 		Validators:      req.Validators,
@@ -227,7 +276,10 @@ func (c *Consensus[T]) InitChain(ctx context.Context, req *abci.RequestInitChain
 
 // PrepareProposal implements types.Application.
 // It is called by cometbft to prepare a proposal block.
-func (c *Consensus[T]) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (resp *abci.ResponsePrepareProposal, err error) {
+func (c *Consensus[T]) PrepareProposal(
+	ctx context.Context,
+	req *abci.RequestPrepareProposal,
+) (resp *abci.ResponsePrepareProposal, err error) {
 	if req.Height < 1 {
 		return nil, errors.New("PrepareProposal called with invalid height")
 	}
@@ -248,7 +300,6 @@ func (c *Consensus[T]) PrepareProposal(ctx context.Context, req *abci.RequestPre
 		return nil, err
 	}
 
-	// TODO add bytes method in x/tx or cachetx
 	encodedTxs := make([][]byte, len(txs))
 	for i, tx := range txs {
 		encodedTxs[i] = tx.Bytes()
@@ -261,7 +312,10 @@ func (c *Consensus[T]) PrepareProposal(ctx context.Context, req *abci.RequestPre
 
 // ProcessProposal implements types.Application.
 // It is called by cometbft to process/verify a proposal block.
-func (c *Consensus[T]) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+func (c *Consensus[T]) ProcessProposal(
+	ctx context.Context,
+	req *abci.RequestProcessProposal,
+) (*abci.ResponseProcessProposal, error) {
 	decodedTxs := make([]T, len(req.Txs))
 	for _, tx := range req.Txs {
 		decTx, err := c.txCodec.Decode(tx)
@@ -288,7 +342,10 @@ func (c *Consensus[T]) ProcessProposal(ctx context.Context, req *abci.RequestPro
 
 // FinalizeBlock implements types.Application.
 // It is called by cometbft to finalize a block.
-func (c *Consensus[T]) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (c *Consensus[T]) FinalizeBlock(
+	ctx context.Context,
+	req *abci.RequestFinalizeBlock,
+) (*abci.ResponseFinalizeBlock, error) {
 	if err := c.validateFinalizeBlockHeight(req); err != nil {
 		return nil, err
 	}
@@ -298,8 +355,8 @@ func (c *Consensus[T]) FinalizeBlock(ctx context.Context, req *abci.RequestFinal
 	}
 
 	// for passing consensus info as a consensus message
-	cometInfo := &types.ConsensusInfo{
-		Info: corecomet.Info{
+	cometInfo := &consensusv1.ConsensusMsgCometInfoRequest{
+		Info: &consensusv1.CometInfo{
 			Evidence:        ToSDKEvidence(req.Misbehavior),
 			ValidatorsHash:  req.NextValidatorsHash,
 			ProposerAddress: req.ProposerAddress,
@@ -315,12 +372,19 @@ func (c *Consensus[T]) FinalizeBlock(ctx context.Context, req *abci.RequestFinal
 		return nil, err
 	}
 
+	cid, err := c.store.LastCommitID()
+	if err != nil {
+		return nil, err
+	}
+
 	blockReq := &coreappmgr.BlockRequest[T]{
 		Height:            uint64(req.Height),
 		Time:              req.Time,
 		Hash:              req.Hash,
+		AppHash:           cid.Hash,
+		ChainId:           c.chainID,
 		Txs:               decodedTxs,
-		ConsensusMessages: []proto.Message{cometInfo},
+		ConsensusMessages: []transaction.Type{cometInfo},
 	}
 
 	resp, newState, err := c.app.DeliverBlock(ctx, blockReq)
@@ -334,7 +398,7 @@ func (c *Consensus[T]) FinalizeBlock(ctx context.Context, req *abci.RequestFinal
 	if err != nil {
 		return nil, err
 	}
-	appHash, err := c.store.StateCommit(stateChanges)
+	appHash, err := c.store.Commit(nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to commit the changeset: %w", err)
 	}
@@ -356,7 +420,7 @@ func (c *Consensus[T]) FinalizeBlock(ctx context.Context, req *abci.RequestFinal
 	// remove txs from the mempool
 	err = c.mempool.Remove(decodedTxs)
 	if err != nil {
-		return nil, fmt.Errorf("unable to remove txs: %w", err) // TODO: evaluate what erroring means here, and if we should even error.
+		return nil, fmt.Errorf("unable to remove txs: %w", err)
 	}
 
 	c.lastCommittedBlock.Store(&BlockData{
@@ -392,7 +456,10 @@ func (c *Consensus[T]) Commit(ctx context.Context, _ *abci.RequestCommit) (*abci
 
 // Vote extensions
 // VerifyVoteExtension implements types.Application.
-func (c *Consensus[T]) VerifyVoteExtension(ctx context.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
+func (c *Consensus[T]) VerifyVoteExtension(
+	ctx context.Context,
+	req *abci.RequestVerifyVoteExtension,
+) (*abci.ResponseVerifyVoteExtension, error) {
 	// If vote extensions are not enabled, as a safety precaution, we return an
 	// error.
 	cp, err := c.GetConsensusParams(ctx)

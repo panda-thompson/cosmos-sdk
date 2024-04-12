@@ -6,19 +6,19 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/gogoproto/proto" // TODO: use protov2
+	"github.com/cosmos/gogoproto/proto"
 
 	consensusv1 "cosmossdk.io/api/cosmos/consensus/v1"
+	"cosmossdk.io/core/store"
 	"cosmossdk.io/core/transaction"
-	"cosmossdk.io/server/v2/core/appmanager"
 
+	appmanager "cosmossdk.io/core/app"
 	"cosmossdk.io/server/v2/cometbft/mempool"
-	"cosmossdk.io/server/v2/core/store"
 )
 
 type AppManager[T transaction.Tx] interface {
 	ValidateTx(ctx context.Context, tx T) (appmanager.TxResult, error)
-	Query(ctx context.Context, version uint64, request appmanager.Type) (response appmanager.Type, err error)
+	Query(ctx context.Context, version uint64, request transaction.Type) (response transaction.Type, err error)
 }
 
 type DefaultProposalHandler[T transaction.Tx] struct {
@@ -58,7 +58,6 @@ func (h *DefaultProposalHandler[T]) PrepareHandler() PrepareHandler[T] {
 
 		defer h.txSelector.Clear()
 
-		// TODO: can we assume nil mempool is NoOp?
 		// If the mempool is nil or NoOp we simply return the transactions
 		// requested from CometBFT, which, by default, should be in FIFO order.
 		//
@@ -112,7 +111,6 @@ func (h *DefaultProposalHandler[T]) ProcessHandler() ProcessHandler[T] {
 			return nil
 		}
 
-		// TODO: not using this request for now
 		_, ok := req.(*abci.RequestProcessProposal)
 		if !ok {
 			return fmt.Errorf("invalid request type: %T", req)
@@ -141,7 +139,11 @@ func (h *DefaultProposalHandler[T]) ProcessHandler() ProcessHandler[T] {
 			}
 
 			if maxBlockGas > 0 {
-				totalTxGas += tx.GetGasLimit()
+				gaslimit, err := tx.GetGasLimit()
+				if err != nil {
+					return fmt.Errorf("failed to get gas limit")
+				}
+				totalTxGas += gaslimit
 				if totalTxGas > maxBlockGas {
 					return fmt.Errorf("total tx gas %d exceeds max block gas %d", totalTxGas, maxBlockGas)
 				}

@@ -3,8 +3,7 @@ package store
 import (
 	"sync/atomic"
 
-	corestore "cosmossdk.io/core/store"
-	"cosmossdk.io/server/v2/core/store"
+	"cosmossdk.io/core/store"
 )
 
 var _ Store = (*Storage[Database])(nil)
@@ -50,14 +49,14 @@ type actorsState[DB Database] struct {
 func (a actorsState[DB]) GetReader(address []byte) (store.Reader, error) {
 	return state[DB]{
 		version:  a.version,
-		storeKey: string(address),
+		storeKey: address,
 		db:       a.db,
 	}, nil
 }
 
 type state[DB Database] struct {
 	version  uint64
-	storeKey string
+	storeKey []byte
 	db       DB
 }
 
@@ -65,10 +64,10 @@ func (s state[DB]) Has(key []byte) (bool, error) { return s.db.Has(s.storeKey, s
 
 func (s state[DB]) Get(bytes []byte) ([]byte, error) { return s.db.Get(s.storeKey, s.version, bytes) }
 
-func (s state[DB]) Iterator(start, end []byte) (corestore.Iterator, error) {
+func (s state[DB]) Iterator(start, end []byte) (store.Iterator, error) {
 	return s.db.Iterator(s.storeKey, s.version, start, end)
 }
 
-func (s state[DB]) ReverseIterator(start, end []byte) (corestore.Iterator, error) {
+func (s state[DB]) ReverseIterator(start, end []byte) (store.Iterator, error) {
 	return s.db.ReverseIterator(s.storeKey, s.version, start, end)
 }

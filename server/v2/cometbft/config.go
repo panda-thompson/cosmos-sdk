@@ -3,6 +3,7 @@ package cometbft
 import (
 	"cosmossdk.io/server/v2/api/grpc"
 	"cosmossdk.io/server/v2/cometbft/types"
+	cmtcfg "github.com/cometbft/cometbft/config"
 )
 
 // Config is the configuration for the CometBFT application
@@ -17,7 +18,7 @@ type Config struct {
 	HaltTime        uint64              `mapstructure:"halt_time" toml:"halt_time"`
 	// end of app.toml config options
 
-	AddrPeerFilter types.PeerFilter // filter peers by address and port // TODO:
+	AddrPeerFilter types.PeerFilter // filter peers by address and port
 	IdPeerFilter   types.PeerFilter // filter peers by node ID
 
 	Transport  string `mapstructure:"transport" toml:"transport"`
@@ -27,6 +28,9 @@ type Config struct {
 
 	GrpcConfig grpc.Config
 
-	MempoolConfig
-	// CmtConfig *cmtcfg.Config
+	// MempoolConfig
+	CmtConfig *cmtcfg.Config
+
+	// Must be set by the application to grant authority to the consensus engine to send messages to the consensus module
+	ConsensusAuthority string
 }
