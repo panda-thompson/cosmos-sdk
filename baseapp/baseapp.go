@@ -53,7 +53,6 @@ type BaseApp struct { // nolint: maligned
 	postHandler sdk.AnteHandler // post handler, optional, e.g. for tips
 
 	appStore
-	baseappVersions
 	peerFilters
 	snapshotData
 	abciData
@@ -98,6 +97,13 @@ type BaseApp struct { // nolint: maligned
 	// ResponseCommit.RetainHeight.
 	minRetainBlocks uint64
 
+	// application's version string
+	version string
+
+	// application's protocol version that increments on every upgrade
+	// if BaseApp is passed to the upgrade keeper's NewKeeper method.
+	appVersion uint64
+
 	// recovery handler for app.runTx method
 	runTxRecoveryMiddleware recoveryMiddleware
 
@@ -111,6 +117,10 @@ type BaseApp struct { // nolint: maligned
 	// abciListeners for hooking into the ABCI message processing of the BaseApp
 	// and exposing the requests and responses to external consumers
 	abciListeners []ABCIListener
+
+	// chainID is the chainID of the chain that is set upon starting the chain
+	// via InitChain.
+	chainID string
 }
 
 type appStore struct {
@@ -139,15 +149,6 @@ type abciData struct {
 
 	// absent validators from begin block
 	voteInfos []abci.VoteInfo
-}
-
-type baseappVersions struct {
-	// application's version string
-	version string
-
-	// application's protocol version that increments on every upgrade
-	// if BaseApp is passed to the upgrade keeper's NewKeeper method.
-	appVersion uint64
 }
 
 // should really get handled in some db struct
@@ -202,7 +203,14 @@ func (app *BaseApp) Name() string {
 }
 
 // AppVersion returns the application's protocol version.
-func (app *BaseApp) AppVersion() uint64 {
+func (app *BaseApp) AppVersion(ctx sdk.Context) uint64 {
+	if app.appVersion == 0 && app.paramStore.Has(ctx, ParamStoreKeyVersionParams) {
+		var vp tmproto.VersionParams
+
+		app.paramStore.Get(ctx, ParamStoreKeyVersionParams, &vp)
+		// set the app version
+		app.appVersion = vp.AppVersion
+	}
 	return app.appVersion
 }
 
@@ -219,6 +227,10 @@ func (app *BaseApp) Logger() log.Logger {
 // Trace returns the boolean value for logging error stack traces.
 func (app *BaseApp) Trace() bool {
 	return app.trace
+}
+
+func (app *BaseApp) GetChainID() string {
+	return app.chainID
 }
 
 // MsgServiceRouter returns the MsgServiceRouter of a BaseApp.
@@ -474,6 +486,13 @@ func (app *BaseApp) GetConsensusParams(ctx sdk.Context) *abci.ConsensusParams {
 		cp.Validator = &vp
 	}
 
+	if app.paramStore.Has(ctx, ParamStoreKeyVersionParams) {
+		var vp tmproto.VersionParams
+
+		app.paramStore.Get(ctx, ParamStoreKeyVersionParams, &vp)
+		cp.Version = &vp
+	}
+
 	return cp
 }
 
@@ -497,8 +516,10 @@ func (app *BaseApp) StoreConsensusParams(ctx sdk.Context, cp *abci.ConsensusPara
 	app.paramStore.Set(ctx, ParamStoreKeyBlockParams, cp.Block)
 	app.paramStore.Set(ctx, ParamStoreKeyEvidenceParams, cp.Evidence)
 	app.paramStore.Set(ctx, ParamStoreKeyValidatorParams, cp.Validator)
-	// We're explicitly not storing the Tendermint app_version in the param store. It's
-	// stored instead in the x/upgrade store, with its own bump logic.
+	// NOTE: we only persist the app version from v2 onwards
+	if cp.Version != nil && cp.Version.AppVersion >= 2 {
+		app.paramStore.Set(ctx, ParamStoreKeyVersionParams, cp.Version)
+	}
 }
 
 // getMaximumBlockGas gets the maximum gas from the consensus params. It panics
@@ -575,6 +596,17 @@ func (app *BaseApp) getState(mode runTxMode) *state {
 	}
 
 	return app.checkState
+}
+
+// NewProposalContext returns a context with a branched version of the state
+// that is safe to query during ProcessProposal.
+func (app *BaseApp) NewProposalContext(header tmproto.Header) sdk.Context {
+	// use custom query multistore if provided
+	ms := app.cms.CacheMultiStore()
+	ctx := sdk.NewContext(ms, header, false, app.logger).WithBlockGasMeter(storetypes.NewInfiniteGasMeter())
+	ctx = ctx.WithConsensusParams(app.GetConsensusParams(ctx))
+
+	return ctx
 }
 
 // retrieve the context for the tx w/ txBytes and other memoized values.

@@ -53,12 +53,16 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 	// initialize the deliver state and check state with a correct header
 	app.setDeliverState(initHeader)
 	app.setCheckState(initHeader)
+	app.chainID = req.ChainId
 
 	// Store the consensus params in the BaseApp's paramstore. Note, this must be
 	// done after the deliver state and context have been set as it's persisted
 	// to state.
 	if req.ConsensusParams != nil {
 		app.StoreConsensusParams(app.deliverState.ctx, req.ConsensusParams)
+		if req.ConsensusParams.Version != nil {
+			app.appVersion = req.ConsensusParams.Version.AppVersion
+		}
 	}
 
 	if app.initChainer == nil {
@@ -121,7 +125,15 @@ func (app *BaseApp) SetOption(req abci.RequestSetOption) (res abci.ResponseSetOp
 // Info implements the ABCI interface.
 func (app *BaseApp) Info(req abci.RequestInfo) abci.ResponseInfo {
 	lastCommitID := app.cms.LastCommitID()
-
+	// load the app version for a non zero height and zero app hash
+	if lastCommitID.Version > 0 && app.appVersion == 0 {
+		ctx, err := app.createQueryContext(lastCommitID.Version, false)
+		if err != nil {
+			panic(err)
+		}
+		// get and set the app version
+		_ = app.AppVersion(ctx)
+	}
 	return abci.ResponseInfo{
 		Data:             app.name,
 		Version:          app.version,
@@ -292,6 +304,23 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 		Log:       result.Log,
 		Data:      result.Data,
 		Events:    sdk.MarkEventsToIndex(result.Events, app.indexEvents),
+	}
+}
+
+// PrepareProposal fullfills the nubit-core version of the ABCI interface. It
+// allows for arbitrary processing steps before transaction data is included in
+// the block.
+func (app *BaseApp) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+	return abci.ResponsePrepareProposal{
+		BlockData: req.BlockData,
+	}
+}
+
+// ProcessProposal fulfills the nubit-core version of the ABCI++ interface.
+// It allows for arbitrary processing to occur after receiving a proposal block.
+func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+	return abci.ResponseProcessProposal{
+		Result: abci.ResponseProcessProposal_ACCEPT,
 	}
 }
 
