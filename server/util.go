@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -20,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	tmcmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
+	cbftcmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
 	tmcfg "github.com/tendermint/tendermint/config"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -34,6 +33,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // DONTCOVER
@@ -44,9 +44,10 @@ const ServerContextKey = sdk.ContextKey("server.context")
 
 // server context
 type Context struct {
-	Viper  *viper.Viper
-	Config *tmcfg.Config
-	Logger tmlog.Logger
+	Viper                  *viper.Viper
+	Config                 *tmcfg.Config
+	Logger                 tmlog.Logger
+	DefaultConsensusParams *cmtproto.ConsensusParams
 }
 
 // ErrorCode contains the exit code for server exit.
@@ -67,7 +68,7 @@ func NewDefaultContext() *Context {
 }
 
 func NewContext(v *viper.Viper, config *tmcfg.Config, logger tmlog.Logger) *Context {
-	return &Context{v, config, logger}
+	return &Context{v, config, logger, nil}
 }
 
 func bindFlags(basename string, cmd *cobra.Command, v *viper.Viper) (err error) {
@@ -214,7 +215,6 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 		conf.RPC.PprofListenAddress = "localhost:6060"
 		conf.P2P.RecvRate = 5120000
 		conf.P2P.SendRate = 5120000
-		conf.Consensus.TimeoutCommit = 5 * time.Second
 		tmcfg.WriteConfigFile(tmCfgFile, conf)
 
 	case err != nil:
@@ -283,8 +283,8 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 		ShowValidatorCmd(),
 		ShowAddressCmd(),
 		VersionCmd(),
-		tmcmd.ResetAllCmd,
-		tmcmd.ResetStateCmd,
+		cbftcmd.ResetAllCmd,
+		cbftcmd.ResetStateCmd,
 		BootstrapStateCmd(appCreator),
 	)
 
