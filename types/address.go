@@ -440,9 +440,6 @@ func (va ValAddress) Bytes() []byte {
 
 // String implements the Stringer interface.
 func (va ValAddress) String() string {
-	if va.Empty() {
-		return ""
-	}
 
 	key := conv.UnsafeBytesToStr(va)
 
@@ -599,8 +596,6 @@ func (ca ConsAddress) Bytes() []byte {
 
 // String implements the Stringer interface.
 func (ca ConsAddress) String() string {
-	if ca.Empty() {
-		return ""
 	}
 
 	key := conv.UnsafeBytesToStr(ca)
