@@ -236,8 +236,6 @@ func (coins Coins) isSorted() bool {
 	return true
 }
 
-// IsValid calls Validate and returns true when the Coins are sorted, have positive amount, with a
-// valid and unique denomination (i.e no duplicates).
 func (coins Coins) IsValid() bool {
 	return coins.Validate() == nil
 }
@@ -246,15 +244,7 @@ func (coins Coins) Add(coinsB ...Coin) Coins {
 	return coins.safeAdd(coinsB)
 }
 
-// safeAdd will perform addition of two coins sets. If both coin sets are
-// empty, then an empty set is returned. If only a single set is empty, the
-// other set is returned. Otherwise, the coins are compared in order of their
-// denomination and addition only occurs when the denominations match, otherwise
-// the coin is simply added to the sum assuming it's not zero.
-// The function panics if `coins` or  `coinsB` are not sorted (ascending).
 func (coins Coins) safeAdd(coinsB Coins) (coalesced Coins) {
-	// probably the best way will be to make Coins and interface and hide the structure
-	// definition (type alias)
 	if !coins.isSorted() {
 		panic("Coins (self) must be sorted")
 	}
@@ -263,7 +253,6 @@ func (coins Coins) safeAdd(coinsB Coins) (coalesced Coins) {
 	}
 
 	uniqCoins := make(map[string]Coins, len(coins)+len(coinsB))
-	// Traverse all the coins for each of the coins and coinsB.
 	for _, cL := range []Coins{coins, coinsB} {
 		for _, c := range cL {
 			uniqCoins[c.Denom] = append(uniqCoins[c.Denom], c)
@@ -282,10 +271,7 @@ func (coins Coins) safeAdd(coinsB Coins) (coalesced Coins) {
 	return coalesced.Sort()
 }
 
-// DenomsSubsetOf returns true if receiver's denom set
-// is subset of coinsB's denoms.
 func (coins Coins) DenomsSubsetOf(coinsB Coins) bool {
-	// more denoms in B than in receiver
 	if len(coins) > len(coinsB) {
 		return false
 	}
@@ -299,15 +285,6 @@ func (coins Coins) DenomsSubsetOf(coinsB Coins) bool {
 	return true
 }
 
-// Sub subtracts a set of coins from another.
-//
-// e.g.
-// {2A, 3B} - {A} = {A, 3B}
-// {2A} - {0B} = {2A}
-// {A, B} - {A} = {B}
-//
-// CONTRACT: Sub will never return Coins where one Coin has a non-positive
-// amount. In otherwords, IsValid will always return true.
 func (coins Coins) Sub(coinsB ...Coin) Coins {
 	diff, hasNeg := coins.SafeSub(coinsB...)
 	if hasNeg {
@@ -317,20 +294,11 @@ func (coins Coins) Sub(coinsB ...Coin) Coins {
 	return diff
 }
 
-// SafeSub performs the same arithmetic as Sub but returns a boolean if any
-// negative coin amount was returned.
-// The function panics if `coins` or  `coinsB` are not sorted (ascending).
 func (coins Coins) SafeSub(coinsB ...Coin) (Coins, bool) {
 	diff := coins.safeAdd(NewCoins(coinsB...).negative())
 	return diff, diff.IsAnyNegative()
 }
 
-// MulInt performs the scalar multiplication of coins with a `multiplier`
-// All coins are multiplied by x
-// e.g.
-// {2A, 3B} * 2 = {4A, 6B}
-// {2A} * 0 panics
-// Note, if IsValid was true on Coins, IsValid stays true.
 func (coins Coins) MulInt(x Int) Coins {
 	coins, ok := coins.SafeMulInt(x)
 	if !ok {
@@ -480,25 +448,6 @@ func (coins Coins) Min(coinsB Coins) Coins {
 // IsAllGT returns true if for every denom in coinsB,
 // the denom is present at a greater amount in coins.
 func (coins Coins) IsAllGT(coinsB Coins) bool {
-	if len(coins) == 0 {
-		return false
-	}
-
-	if len(coinsB) == 0 {
-		return true
-	}
-
-	if !coinsB.DenomsSubsetOf(coins) {
-		return false
-	}
-
-	for _, coinB := range coinsB {
-		amountA, amountB := coins.AmountOf(coinB.Denom), coinB.Amount
-		if !amountA.GT(amountB) {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -506,20 +455,6 @@ func (coins Coins) IsAllGT(coinsB Coins) bool {
 // the denom is present at a smaller amount in coins;
 // else returns true.
 func (coins Coins) IsAllGTE(coinsB Coins) bool {
-	if len(coinsB) == 0 {
-		return true
-	}
-
-	if len(coins) == 0 {
-		return false
-	}
-
-	for _, coinB := range coinsB {
-		if coinB.Amount.GT(coins.AmountOf(coinB.Denom)) {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -535,14 +470,6 @@ func (coins Coins) IsAllLTE(coinsB Coins) bool {
 	return coinsB.IsAllGTE(coins)
 }
 
-// IsAnyGT returns true iff for any denom in coins, the denom is present at a
-// greater amount in coinsB.
-//
-// e.g.
-// {2A, 3B}.IsAnyGT{A} = true
-// {2A, 3B}.IsAnyGT{5C} = false
-// {}.IsAnyGT{5C} = false
-// {2A, 3B}.IsAnyGT{} = false
 func (coins Coins) IsAnyGT(coinsB Coins) bool {
 	if len(coinsB) == 0 {
 		return false
