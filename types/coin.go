@@ -8,11 +8,6 @@ import (
 	"strings"
 )
 
-//-----------------------------------------------------------------------------
-// Coin
-
-// NewCoin returns a new coin with a denomination and amount. It will panic if
-// the amount is negative or if the denomination is invalid.
 func NewCoin(denom string, amount Int) Coin {
 	coin := Coin{
 		Denom:  denom,
@@ -26,19 +21,14 @@ func NewCoin(denom string, amount Int) Coin {
 	return coin
 }
 
-// NewInt64Coin returns a new coin with a denomination and amount. It will panic
-// if the amount is negative.
 func NewInt64Coin(denom string, amount int64) Coin {
 	return NewCoin(denom, NewInt(amount))
 }
 
-// String provides a human-readable representation of a coin
 func (coin Coin) String() string {
 	return fmt.Sprintf("%v%s", coin.Amount, coin.Denom)
 }
 
-// Validate returns an error if the Coin has a negative amount or if
-// the denom is invalid.
 func (coin Coin) Validate() error {
 	if err := ValidateDenom(coin.Denom); err != nil {
 		return err
@@ -197,8 +187,6 @@ func sanitizeCoins(coins []Coin) Coins {
 
 type coinsJSON Coins
 
-// MarshalJSON implements a custom JSON marshaller for the Coins type to allow
-// nil Coins to be encoded as an empty array.
 func (coins Coins) MarshalJSON() ([]byte, error) {
 	if coins == nil {
 		return json.Marshal(coinsJSON(Coins{}))
