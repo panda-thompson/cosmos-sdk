@@ -481,6 +481,10 @@ func (coins DecCoins) AmountOf(denom string) Dec {
 
 // IsEqual returns true if the two sets of DecCoins have the same value.
 func (coins DecCoins) IsEqual(coinsB DecCoins) bool {
+	if len(coins) != len(coinsB) {
+		return false
+	}
+
 	coins = coins.Sort()
 	coinsB = coinsB.Sort()
 

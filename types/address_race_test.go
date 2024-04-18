@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 )
 
+// generates AccAddress with `prefix` and calls String method
 func addressStringCaller(require *require.Assertions, prefix byte, max uint32, cancel chan bool, done chan<- bool) {
 	bz := make([]byte, 5) // prefix + 4 bytes for uint
 	bz[0] = prefix

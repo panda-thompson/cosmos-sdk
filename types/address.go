@@ -58,7 +58,7 @@ const (
 	PrefixOperator = "oper"
 
 	// PrefixAddress is the prefix for addresses
-	PrefixAddress = "htf"
+	PrefixAddress = "addr"
 
 	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
 	Bech32PrefixAccAddr = Bech32MainPrefix
@@ -163,6 +163,9 @@ func AccAddressFromHexUnsafe(address string) (addr AccAddress, err error) {
 // ref: https://github.com/cosmos/cosmos-sdk/issues/9690
 func VerifyAddressFormat(bz []byte) error {
 	verifier := GetConfig().GetAddressVerifier()
+	if verifier != nil {
+		return verifier(bz)
+	}
 
 	if len(bz) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownAddress, "addresses cannot be empty")
@@ -318,6 +321,8 @@ func (aa AccAddress) Format(s fmt.State, verb rune) {
 		s.Write([]byte(aa.String()))
 	case 'p':
 		s.Write([]byte(fmt.Sprintf("%p", aa)))
+	default:
+		s.Write([]byte(fmt.Sprintf("%X", []byte(aa))))
 	}
 }
 
@@ -358,6 +363,10 @@ func ValAddressFromBech32(address string) (addr ValAddress, err error) {
 
 // Returns boolean for whether two ValAddresses are Equal
 func (va ValAddress) Equals(va2 Address) bool {
+	if va.Empty() && va2.Empty() {
+		return true
+	}
+
 	return bytes.Equal(va.Bytes(), va2.Bytes())
 }
 
@@ -440,6 +449,9 @@ func (va ValAddress) Bytes() []byte {
 
 // String implements the Stringer interface.
 func (va ValAddress) String() string {
+	if va.Empty() {
+		return ""
+	}
 
 	key := conv.UnsafeBytesToStr(va)
 
@@ -596,6 +608,8 @@ func (ca ConsAddress) Bytes() []byte {
 
 // String implements the Stringer interface.
 func (ca ConsAddress) String() string {
+	if ca.Empty() {
+		return ""
 	}
 
 	key := conv.UnsafeBytesToStr(ca)
