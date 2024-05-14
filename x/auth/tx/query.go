@@ -15,12 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// QueryTxsByEvents performs a search for transactions for a given set of events
-// via the Tendermint RPC. An event takes the form of:
-// "{eventAttribute}.{attributeKey} = '{attributeValue}'". Each event is
-// concatenated with an 'AND' operand. It returns a slice of Info object
-// containing txs and metadata. An error is returned if the query fails.
-// If an empty string is provided it will order txs by asc
 func QueryTxsByEvents(clientCtx client.Context, events []string, page, limit int, orderBy string) (*sdk.SearchTxsResult, error) {
 	if len(events) == 0 {
 		return nil, errors.New("must declare at least one event to search")
@@ -42,10 +36,6 @@ func QueryTxsByEvents(clientCtx client.Context, events []string, page, limit int
 		return nil, err
 	}
 
-	// TODO: this may not always need to be proven
-	// https://github.com/cosmos/cosmos-sdk/issues/6807
-	// FIXME: We have disabled the prove flag for now as nubit-core doesn't yet support it.
-	// Ref: https://github.com/celestiaorg/nubit-core/issues/918
 	resTxs, err := node.TxSearch(context.Background(), query, false, &page, &limit, orderBy)
 	if err != nil {
 		return nil, err
@@ -79,10 +69,6 @@ func QueryTx(clientCtx client.Context, hashHexStr string) (*sdk.TxResponse, erro
 		return nil, err
 	}
 
-	// TODO: this may not always need to be proven
-	// https://github.com/cosmos/cosmos-sdk/issues/6807
-	// FIXME: We have disabled the prove flag for now as nubit-core doesn't yet support it.
-	// Ref: https://github.com/celestiaorg/nubit-core/issues/918
 	resTx, err := node.Tx(context.Background(), hash, false)
 	if err != nil {
 		return nil, err
