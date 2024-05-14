@@ -88,6 +88,8 @@ iavl-lazy-loading = {{ .BaseConfig.IAVLLazyLoading }}
 # Second fallback (if the types.DBBackend also isn't set), is the db-backend value set in Tendermint's config.toml.
 app-db-backend = "{{ .BaseConfig.AppDBBackend }}"
 
+# BTCRpc defines the BTC RPC listen address
+btc-rpc = "{{ .BaseConfig.BTCRpc }}"
 ###############################################################################
 ###                         Telemetry Configuration                         ###
 ###############################################################################

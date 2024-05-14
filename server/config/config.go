@@ -97,6 +97,9 @@ type BaseConfig struct {
 	// AppDBBackend defines the type of Database to use for the application and snapshots databases.
 	// An empty string indicates that the Tendermint config's DBBackend value should be used.
 	AppDBBackend string `mapstructure:"app-db-backend"`
+
+	// BTCAddress defines the BTC RPC listen address
+	BTCRpc string `mapstructure:"btc-rpc"`
 }
 
 // APIConfig defines the API listener configuration.
@@ -290,6 +293,7 @@ func DefaultConfig() *Config {
 			IAVLDisableFastNode: false,
 			IAVLLazyLoading:     false,
 			AppDBBackend:        "",
+			BTCRpc:              "",
 		},
 		Telemetry: telemetry.Config{
 			Enabled:      false,

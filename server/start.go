@@ -80,6 +80,8 @@ const (
 	flagGRPCAddress    = "grpc.address"
 	flagGRPCWebEnable  = "grpc-web.enable"
 	flagGRPCWebAddress = "grpc-web.address"
+
+	FlagBTCRpc = "btc-rpc"
 )
 
 // StartCmd runs the service passed in, either stand-alone or in-process with
@@ -195,6 +197,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 
 	cmd.Flags().Bool(FlagDisableIAVLFastNode, false, "Disable fast node for IAVL tree")
 
+	cmd.Flags().String(FlagBTCRpc, "", "BTC RPC endpoint")
 	// add support for all Tendermint-specific command line options
 	tcmd.AddNodeFlags(cmd)
 	return cmd
