@@ -353,7 +353,7 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 		}
 	}
 
-	app.logger.Info("commit synced", "commit", fmt.Sprintf("%X", commitID))
+	app.logger.Debug("commit synced", "commit", fmt.Sprintf("%X", commitID))
 
 	// Reset the Check state to the latest committed.
 	//

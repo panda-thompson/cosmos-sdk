@@ -73,7 +73,7 @@ require (
 	github.com/aws/aws-sdk-go v1.40.45 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/riemalabs/nubit-kzg v0.20.0 // indirect
+	github.com/RiemaLabs/nubit-kzg v0.1.0-rc.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -174,7 +174,6 @@ require (
 )
 
 replace (
-	github.com/riemalabs/nubit-kzg => ../nubit-kzg
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
@@ -188,7 +187,7 @@ replace (
 	// replace broken goleveldb.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	// use cometbft
-	github.com/tendermint/tendermint => ../nubit-core
+	github.com/tendermint/tendermint => github.com/RiemaLabs/nubit-core v0.1.0-rc.1
 )
 
 retract (
