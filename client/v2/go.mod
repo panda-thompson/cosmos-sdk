@@ -8,10 +8,10 @@ require (
 	cosmossdk.io/depinject v1.0.0-alpha.4
 	cosmossdk.io/x/bank v0.0.0-00010101000000-000000000000
 	cosmossdk.io/x/gov v0.0.0-20231113122742-912390d5fc4a
-	cosmossdk.io/x/tx v0.13.2
+	cosmossdk.io/x/tx v0.13.5
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cockroachdb/errors v1.11.1
-	github.com/cosmos/cosmos-proto v1.0.0-beta.4
+	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.51.0
 	github.com/manifoldco/promptui v0.9.0 // indirect
 	github.com/spf13/cobra v1.8.0
@@ -53,7 +53,7 @@ require (
 	github.com/cosmos/cosmos-db v1.0.2 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
-	github.com/cosmos/gogoproto v1.4.12
+	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/iavl v1.0.0 // indirect
 	github.com/cosmos/ics23/go v0.10.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.13.3 // indirect
