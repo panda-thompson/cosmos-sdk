@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.2-0.20240403102038-f63e5fdf7c96
 	github.com/otiai10/copy v1.14.0
 	github.com/spf13/cobra v1.8.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
