@@ -1,6 +1,6 @@
 module cosmossdk.io/client/v2
 
-go 1.21
+go 1.22
 
 require (
 	cosmossdk.io/api v0.7.4
@@ -19,7 +19,7 @@ require (
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
 	gotest.tools/v3 v3.5.1
-	sigs.k8s.io/yaml v1.4.0
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
@@ -169,6 +169,7 @@ require (
 require (
 	buf.build/gen/go/cosmos/gogo-proto/protocolbuffers/go v1.32.0-20230509103710-5e5b9fdd0180.1 // indirect
 	buf.build/gen/go/tendermint/tendermint/protocolbuffers/go v1.32.0-20231117195010-33ed361a9051.1 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
 )
 
 replace github.com/cosmos/cosmos-sdk => ./../../
