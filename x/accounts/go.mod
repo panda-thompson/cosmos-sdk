@@ -1,6 +1,6 @@
 module cosmossdk.io/x/accounts
 
-go 1.21
+go 1.23
 
 require (
 	cosmossdk.io/api v0.7.4
@@ -15,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.36.9
 )
 
 require (
