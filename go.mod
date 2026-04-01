@@ -43,7 +43,7 @@ require (
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/magiconair/properties v1.8.7
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mdp/qrterminal/v3 v3.2.0
+	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/muesli/termenv v0.15.2
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/common v0.52.2
@@ -127,7 +127,7 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
@@ -161,7 +161,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.18.0 // indirect
