@@ -19,7 +19,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.12.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 	google.golang.org/grpc v1.63.2
 	gotest.tools/v3 v3.5.1 // indirect
@@ -111,7 +111,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.1 // indirect
 	github.com/petermattis/goid v0.0.0-20231207134359-e60b3f734c67 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.52.2 // indirect
@@ -166,6 +165,7 @@ require (
 	github.com/google/orderedcode v0.0.1 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 
 replace github.com/cosmos/cosmos-sdk => ../../.
